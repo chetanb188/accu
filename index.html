@@ -36,7 +36,6 @@ input[type=date]{color-scheme:light}
 ::-webkit-scrollbar-thumb{background:#5a5344;border-radius:4px}
 ::-webkit-scrollbar-track{background:transparent}
 
-/* ── Desk, masthead, tabs ── */
 #wrap{max-width:1320px;margin:0 auto;padding:0 20px 50px}
 #mast{background:var(--green);border:1px solid #0b1d16;border-bottom:0;border-radius:6px 6px 0 0;padding:16px 22px 26px;display:flex;align-items:center;gap:16px}
 .brand{display:flex;gap:13px;align-items:center}
@@ -74,7 +73,6 @@ body.onboard #mast,body.onboard #tabs,body.onboard #foot{display:none}
 body.onboard #main{background:transparent;border:0;box-shadow:none;min-height:0;padding:0}
 body.onboard #main::before{display:none}
 
-/* ── Typography / panels ── */
 h1{font-family:'Fraunces',serif;font-size:28px;font-weight:560;letter-spacing:-.01em}
 h3{font-family:'Fraunces',serif;font-size:17.5px;font-weight:560}
 .en{font-size:9.5px;letter-spacing:.22em;color:var(--faint);font-weight:600;text-transform:uppercase}
@@ -83,7 +81,6 @@ h3{font-family:'Fraunces',serif;font-size:17.5px;font-weight:560}
 .pline{display:flex;gap:8px;font-size:13.5px;padding:3px 0}
 .pline b{min-width:110px;color:var(--ink2);font-weight:600}
 
-/* ── Tables ── */
 table.tb{width:100%;border-collapse:collapse;font-size:13.5px}
 .tb th{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink2);font-weight:700;text-align:right;padding:7px 10px;border-bottom:2px solid var(--ink);vertical-align:bottom}
 .tb th.lft{text-align:left}
@@ -100,9 +97,9 @@ table.tb{width:100%;border-collapse:collapse;font-size:13.5px}
 .wr{width:1%;white-space:nowrap}
 .wr .ibtn{margin-left:2px}
 .drill{cursor:pointer}
-.drill:hover>td{background:rgba(168,133,62,.14)!important}
+td.drill:hover,td.drill:hover+td{background:rgba(168,133,62,.16)!important}
+tr.drill:hover>td{background:rgba(168,133,62,.12)!important}
 
-/* ── Forms ── */
 .lbl{display:block;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink2);margin-bottom:5px;font-weight:700}
 .fld{display:block}
 .frow{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
@@ -129,7 +126,6 @@ select.inp{appearance:none;padding-right:26px;background-image:url("data:image/s
 .ibtn:hover{border-color:var(--ink);color:var(--ink);background:var(--paper2)}
 kbd{font-family:'IBM Plex Mono',monospace;font-size:10px;border:1px solid var(--hair2);padding:1px 5px;border-radius:3px;background:var(--paper2);color:var(--ink2)}
 
-/* ── Tally-style button bar & gateway ── */
 .gw-grid{display:grid;grid-template-columns:minmax(0,1fr) 230px;gap:26px;align-items:start}
 .gw-sec{font-size:9.5px;letter-spacing:.22em;color:var(--faint);font-weight:700;margin:18px 0 4px;text-transform:uppercase}
 .gw-sec:first-of-type{margin-top:2px}
@@ -154,7 +150,6 @@ kbd{font-family:'IBM Plex Mono',monospace;font-size:10px;border:1px solid var(--
 .led-o.on,.led-o:hover{background:var(--brass);color:#fff}
 .led-o.on small,.led-o:hover small{color:#f7f1de}
 
-/* ── Voucher ── */
 .vform{position:sticky;top:14px;border:1px solid var(--hair2);background:#faf6ec;padding:16px 18px 18px}
 .seg{display:flex;border:1px solid var(--ink);border-radius:2px;overflow:hidden;margin:12px 0 14px}
 .seg-b{flex:1;padding:8px 4px;font-size:12px;font-weight:700;border-right:1px solid var(--ink)}
@@ -191,7 +186,6 @@ kbd{font-family:'IBM Plex Mono',monospace;font-size:10px;border:1px solid var(--
 .skpis{display:flex;border:1px solid var(--hair2);background:#faf6ec;margin-bottom:16px;flex-wrap:wrap}
 .negq{color:var(--red);font-weight:700}
 
-/* ── Dashboard ── */
 .dash-head{display:flex;gap:26px;align-items:flex-end;flex-wrap:wrap;margin-bottom:24px;border-bottom:2px solid var(--ink);padding-bottom:18px}
 .dash-head p{font-size:12.5px;color:var(--ink2)}
 .dash-kpis{margin-left:auto;display:flex;border:1px solid var(--hair2);flex-wrap:wrap;background:#faf6ec}
@@ -214,15 +208,12 @@ kbd{font-family:'IBM Plex Mono',monospace;font-size:10px;border:1px solid var(--
 .pl-bar .be{background:var(--red);animation:grow .9s ease}
 @keyframes grow{from{width:0!important}}
 .pl-leg{display:flex;justify-content:space-between;font-size:11.5px;margin-top:6px}
-.keys{margin-top:14px;border-top:1px solid var(--hair2);padding-top:12px;font-size:11.5px;color:var(--ink2);display:grid;gap:6px}
 
-/* ── Ledgers / Stock ── */
 .led-grid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;align-items:start}
 .ghead{display:flex;gap:8px;align-items:baseline;background:var(--paper2);border:1px solid var(--hair2);border-bottom:0;padding:6px 12px;font-size:12px;font-weight:700;letter-spacing:.02em}
 .gpanel .gprim{margin:14px 0 5px;font-size:9.5px;font-weight:700;letter-spacing:.2em;border-bottom:1px solid var(--hair2);padding-bottom:4px;color:var(--ink2)}
 .gl .gi{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:4px 2px;font-size:12.5px;border-bottom:1px dotted var(--hair)}
 
-/* ── Reports ── */
 .rep-grid{display:grid;grid-template-columns:200px minmax(0,1fr) 180px;gap:22px;align-items:start}
 .replist{position:sticky;top:14px;display:flex;flex-direction:column;gap:6px}
 .rli{text-align:left;border:1px solid transparent;border-left:3px solid transparent;padding:9px 12px}
@@ -247,7 +238,6 @@ kbd{font-family:'IBM Plex Mono',monospace;font-size:10px;border:1px solid var(--
 .warn{display:flex;gap:8px;align-items:center;color:var(--red);font-size:12.5px;margin-top:12px;border:1px dashed var(--red);padding:8px 12px}
 .snote{margin-top:12px;font-size:12px;color:var(--ink2);text-align:center}
 
-/* ── Settings ── */
 .set-grid{display:flex;flex-direction:column;gap:24px;max-width:920px}
 .implog{margin-top:12px;border:1px solid var(--hair2);background:var(--paper2);padding:10px 12px;font-size:12.5px;max-height:220px;overflow:auto;display:none}
 .implog div{padding:2px 0;border-bottom:1px dotted var(--hair)}
@@ -255,7 +245,6 @@ kbd{font-family:'IBM Plex Mono',monospace;font-size:10px;border:1px solid var(--
 .corow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--hair2);margin-bottom:6px;flex-wrap:wrap}
 .corow small{display:block;color:var(--ink2);font-size:11px}
 
-/* ── Modal, toast, palette ── */
 .overlay{position:fixed;inset:0;background:rgba(10,9,7,.66);backdrop-filter:blur(3px);display:grid;place-items:center;padding:20px;z-index:100;animation:ofade .15s ease}
 @keyframes ofade{from{opacity:0}}
 .modal{background:var(--paper);border:1px solid var(--ink);width:min(680px,94vw);max-height:90vh;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,.5);animation:mup .18s ease}
@@ -285,7 +274,6 @@ kbd{font-family:'IBM Plex Mono',monospace;font-size:10px;border:1px solid var(--
 .pal-i.on,.pal-i:hover{background:var(--paper2);border-left-color:var(--brass2)}
 .pal-f{border-top:1px solid var(--hair2);padding:8px 14px;font-size:11px;color:var(--ink2);display:flex;gap:12px}
 
-/* ── Onboarding / empty ── */
 .onb{min-height:calc(100vh - 60px);display:grid;place-items:center;padding:30px 0}
 .onb-card{background:var(--paper);border:1px solid #453b2b;box-shadow:0 34px 80px rgba(0,0,0,.55);padding:48px 52px 42px;width:min(580px,94vw);text-align:center;position:relative}
 .onb-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--brass)}
@@ -585,9 +573,9 @@ function bsData(asOf){
   const assets=arr.filter(a=>a.p==='assets').sort((a,b)=>ord(a.id)-ord(b.id));
   const liabs=arr.filter(a=>a.p==='liabilities').sort((a,b)=>ord(a.id)-ord(b.id));
   const profit=n2(cl.reduce((s,{l,bal})=>{const p=groupOf(l).p;return p==='income'?s-bal:p==='expenses'?s+bal:s;},0));
-  const L=assets.map(g=>({n:g.name,a:g.amt,g:g.id,side:'L'}));
-  const cap=liabs.filter(g=>g.id==='capital').map(g=>({n:g.name,a:-g.amt,g:g.id,side:'R'}));
-  const rest=liabs.filter(g=>g.id!=='capital').map(g=>({n:g.name,a:-g.amt,g:g.id,side:'R'}));
+  const L=assets.map(g=>({n:g.name,a:g.amt,g:g.id}));
+  const cap=liabs.filter(g=>g.id==='capital').map(g=>({n:g.name,a:-g.amt,g:g.id}));
+  const rest=liabs.filter(g=>g.id!=='capital').map(g=>({n:g.name,a:-g.amt,g:g.id}));
   const R=[...cap,{n:'Current period profit / (loss)',a:profit},...rest];
   let aT=n2(L.reduce((s,r)=>s+r.a,0)),lT=n2(R.reduce((s,r)=>s+r.a,0));
   const diff=n2(aT-lT);
@@ -692,7 +680,7 @@ function ddHtml(){
 function renderTabs(){$('#tabs').innerHTML=TABS.map(([id,g,e])=>`<button class="tab ${id===curTab?'on':''}" data-act="tab" data-id="${id}"><b>${g}</b><i>${e}</i></button>`).join('');}
 const hideCoDd=()=>{const d=$('#co-dd');if(d)d.hidden=true;};
 
-/* ═══════════ Gateway of Meridian (Tally-style home) ═══════════ */
+/* ═══════════ Gateway of Meridian ═══════════ */
 const GWDEF=[
  ['MASTERS',[
    ['Chart of Accounts','Ledgers, groups & closing balances','led','L'],
@@ -729,7 +717,7 @@ function gwFn(code){
   return()=>gotoTab('home');
 }
 function renderGateway(el){
-  GWITEMS=[];GWSEL=Math.min(GWSEL,40);
+  GWITEMS=[];
   let idx=0;let h='';
   GWDEF.forEach(([sec,items])=>{
     h+=`<div class="gw-sec">${sec}</div>`;
@@ -790,11 +778,17 @@ function renderOnboard(){
 /* ═══════════ Dashboard ═══════════ */
 const pline=(l,v)=>`<div class="pline"><b>${l}</b><span>${esc(v)}</span></div>`;
 function twoSide(L,R,capL,capR,tl,tr){
-  const n=Math.max(L.length,R.length,1);let h=`<table class="tb tsheet"><thead><tr><th colspan="2" class="lft">${capL}</th><th colspan="2" class="lft">${capR}</th></tr><tr><th class="lft">Particulars</th><th class="rt">Amount</th><th class="lft">Particulars</th><th class="rt">Amount</th></tr></thead><tbody>`;
-  for(let i=0;i<n;i++){const l=L[i],r=R[i];
-    const lc=l&&l.g?` class="drill" data-act="drill" data-g="${l.g}" data-side="L"`:'';
-    const rc=r&&r.g?` class="drill" data-act="drill" data-g="${r.g}" data-side="R"`:'';
-    h+=`<tr${lc||rc?' class="drill"':''}${l&&l.g?` data-act="drill" data-g="${l.g}" data-side="L"`:''}${r&&r.g?` data-act="drill" data-g="${r.g}" data-side="R"`:''}><td class="lft">${l?esc(l.n):''}</td><td class="rt num ${l&&l.a<0?'cr':''}">${l?fmtN(l.a):''}</td><td class="lft">${r?esc(r.n):''}</td><td class="rt num ${r&&r.a<0?'cr':''}">${r?fmtN(r.a):''}</td></tr>`;}
+  const n=Math.max(L.length,R.length,1);
+  let h=`<table class="tb tsheet"><thead><tr><th colspan="2" class="lft">${capL}</th><th colspan="2" class="lft">${capR}</th></tr><tr><th class="lft">Particulars</th><th class="rt">Amount</th><th class="lft">Particulars</th><th class="rt">Amount</th></tr></thead><tbody>`;
+  for(let i=0;i<n;i++){
+    const l=L[i],r=R[i];
+    let lt,rt2;
+    if(l&&l.g){lt=`<td class="lft drill" data-act="drill" data-g="${l.g}">${esc(l.n)}</td><td class="rt num ${l.a<0?'cr':''} drill" data-act="drill" data-g="${l.g}">${fmtN(l.a)}</td>`;}
+    else{lt=`<td class="lft">${l?esc(l.n):''}</td><td class="rt num ${l&&l.a<0?'cr':''}">${l?fmtN(l.a):''}</td>`;}
+    if(r&&r.g){rt2=`<td class="lft drill" data-act="drill" data-g="${r.g}">${esc(r.n)}</td><td class="rt num ${r.a<0?'cr':''} drill" data-act="drill" data-g="${r.g}">${fmtN(r.a)}</td>`;}
+    else{rt2=`<td class="lft">${r?esc(r.n):''}</td><td class="rt num ${r&&r.a<0?'cr':''}">${r?fmtN(r.a):''}</td>`;}
+    h+=`<tr>${lt}${rt2}</tr>`;
+  }
   h+=`<tr class="tot"><td class="lft"><b>Total</b></td><td class="rt num"><b>${fmtN(tl)}</b></td><td class="lft"><b>Total</b></td><td class="rt num"><b>${fmtN(tr)}</b></td></tr></tbody></table>`;
   return h;
 }
@@ -818,7 +812,7 @@ function renderDash(el){
     </div>
   </div>
   <div class="panel">
-    <div class="pos-h"><h3>Financial position</h3><span class="en">Balance sheet · as on ${fmtD(todayISO())}</span><span class="sp"></span><button class="btn sm" data-act="rep-go" data-id="bs">${ic('arrR',13)} Full sheet</button></div>
+    <div class="pos-h"><h3>Financial position</h3><span class="en">Balance sheet · as on ${fmtD(todayISO())} · click a group to drill down</span><span class="sp"></span><button class="btn sm" data-act="rep-go" data-id="bs">${ic('arrR',13)} Full sheet</button></div>
     <div class="scroll-x">${twoSide(bs.L,bs.R,'Assets · Debit (DR)','Capital &amp; Liabilities · Credit (CR)',bs.aT,bs.lT)}</div>
   </div>
   <div class="dash-grid">
@@ -952,14 +946,13 @@ function recalcVF(){
   if(!VF)return;
   let td=0,tc=0;VF.rows.forEach(r=>{const d=parseAmt(r.dr),c=parseAmt(r.cr);if(!isNaN(d))td+=d;if(!isNaN(c))tc+=c;});
   td=n2(td);tc=n2(tc);
-  const A=$('#vf-td'),B=$('#vf-tc'),D=$('#vf-diff'),S=$('#vf-save');if(!A)return;
+  const A=$('#vf-td'),B=$('#vf-tc'),D=$('#vf-diff');
+  if(!A)return;
   A.textContent=fmtN(td);B.textContent=fmtN(tc);
   const d=n2(td-tc);
   const ents=VF.rows.filter(r=>r.l&&(parseAmt(r.dr)||parseAmt(r.cr))).length;
-  const ok=Math.abs(d)<0.005&&td>0&&!!VF.no.trim()&&!!VF.date&&ents>=1;
   if(Math.abs(d)<0.005){D.className='diff ok';D.innerHTML=(td>0?ic('check',12)+' Balanced':'Enter amounts');}
   else{D.className='diff bad';D.textContent='Diff '+fmtN(Math.abs(d));}
-  if(S)S.disabled=false;
 }
 function validateVF(){
   if(!VF)return null;
@@ -982,8 +975,10 @@ function validateVF(){
   return{ents,td,tc};
 }
 function commitVoucher(chk){
-  const itemsArr=(VF.type==='sl'||VF.type==='pu')?(VF.items||[]).filter(r=>r.id&&parseAmt(r.qty)>0&&!isNaN(parseAmt(r.rate)))
-    .map(r=>({id:r.id,qty:n2(parseAmt(r.qty)),rate:n2(parseAmt(r.rate)),amt:n2(parseAmt(r.qty)*parseAmt(r.rate)))):[];
+  const itemsArr=(VF.type==='sl'||VF.type==='pu')
+    ?(VF.items||[]).filter(r=>r.id&&parseAmt(r.qty)>0&&!isNaN(parseAmt(r.rate)))
+      .map(r=>({id:r.id,qty:n2(parseAmt(r.qty)),rate:n2(parseAmt(r.rate)),amt:n2(parseAmt(r.qty)*parseAmt(r.rate))}))
+    :[];
   if(VF.edit){
     const v=cd().vouchers.find(x=>x.id===VF.edit);
     if(v){Object.assign(v,{no:VF.no.trim(),date:VF.date,type:VF.type,narr:VF.narr,entries:chk.ents,items:itemsArr});}
@@ -1252,8 +1247,8 @@ function renderRepBody(){
   }
   else if(v==='pl'){
     const d=plData(REP.from,REP.to);
-    const L=d.exp.map(a=>({n:a.name,a:a.amt,g:a.id,side:'L'})).concat(d.profit>0?[{n:'Net profit → to Capital',a:d.profit}]:[]);
-    const R=d.inc.map(a=>({n:a.name,a:a.amt,g:a.id,side:'R'})).concat(d.profit<0?[{n:'Net loss',a:-d.profit}]:[]);
+    const L=d.exp.map(a=>({n:a.name,a:a.amt,g:a.id})).concat(d.profit>0?[{n:'Net profit → to Capital',a:d.profit}]:[]);
+    const R=d.inc.map(a=>({n:a.name,a:a.amt,g:a.id})).concat(d.profit<0?[{n:'Net loss',a:-d.profit}]:[]);
     h=sheetHead('Profit & Loss','Profit & Loss Account')+`<div class="scroll-x">`+twoSide(L,R,'Debit — Expenses (DR)','Credit — Income (CR)',n2(d.te+Math.max(d.profit,0)),n2(d.ti+Math.max(-d.profit,0)))+`</div>
     <p class="snote">${d.profit>=0?`Net profit ${fmtN(d.profit)} — transferred to Capital`:`Net loss ${fmtN(-d.profit)} — deducted from Capital`} · click a group to drill down</p>`;
   }
@@ -1674,6 +1669,17 @@ function palRender(){
 const palRun=i=>{const a=PAL.items[i];closePal();if(a)a.fn();};
 
 /* ═══════════ Actions ═══════════ */
+function refreshVchBar(){
+  const b=document.querySelector('#main .vch3 .btbar');if(!b)return;
+  b.outerHTML=btbarVch();
+}
+function changeVchType(id){
+  if(!VF)return;
+  VF.type=id;if(!VF.edit)VF.no=autoNo(VF.type);
+  if(VF.type==='sl'||VF.type==='pu'){if(VF.items&&VF.items.length)syncItems();}
+  else VF.items=[];
+  renderVForm();refreshVchBar();
+}
 const ACTIONS={
   'tab':t=>gotoTab(t.dataset.id),
   'go-home':()=>gotoTab('home'),
@@ -1722,15 +1728,9 @@ const ACTIONS={
   'fs-disconnect':async()=>{FS.handle=null;FS.on=false;await idbDel('handle');renderMast();if(curTab==='set')renderView();toast('Unlinked — data now lives only in this browser');},
   'fs-open':()=>fsOpenFrom(),
   /* Vouchers */
-  'vf-type':t=>{
-    const parts=t.dataset.act?t.dataset.id:t.dataset.id;
-    VF.type=t.dataset.id;if(!VF.edit)VF.no=autoNo(VF.type);
-    if(VF.type==='sl'||VF.type==='pu'){if(VF.items&&VF.items.length)syncItems();}
-    else VF.items=[];
-    renderVForm();refreshVchBar();
-  },
-  'vf-date-go':()=>{const d=$('#vform [data-f="vf-date"]');d?.focus();d?.showPicker?.();},
-  'fly-ledger':()=>{const f=document.activeElement;const i=(f&&f.dataset&&f.dataset.f==='vf-ledtxt')?+f.dataset.i:null;if(i!=null)MCTX.flyRow=i;else MCTX.flyRow=null;openLedgerModal();},
+  'vf-type':t=>changeVchType(t.dataset.id),
+  'vf-date-go':()=>{const d=$('#vform [data-f="vf-date"]');if(d){d.focus();d.showPicker?.();}},
+  'fly-ledger':()=>{const f=document.activeElement;MCTX.flyRow=(f&&f.dataset&&f.dataset.f==='vf-ledtxt')?+f.dataset.i:null;openLedgerModal();},
   'vf-addrow':()=>{if(VF.rows.length>=40)return toast('Maximum 40 lines','err');VF.rows.push({l:'',dr:'',cr:''});renderVForm();
     const s=$$('#vform [data-f="vf-ledtxt"]');s[s.length-1]?.focus();},
   'vf-delrow':t=>{const i=+t.dataset.id;if(VF.rows.length>1)VF.rows.splice(i,1);else VF.rows[0]={l:'',dr:'',cr:''};renderVForm();},
@@ -1760,9 +1760,9 @@ const ACTIONS={
     if(cd().ledgers.some(x=>x.name.toLowerCase()===name.toLowerCase()&&x.id!==MCTX.led))return toast('An account with this name already exists','err');
     const ob=n2(parseAmt($('#lm-ob').value)||0);
     const g={name,group:$('#lm-group').value,ob,obs:$('#lm-obs').value};
+    let newId=MCTX.led;
     if(MCTX.led)Object.assign(led(MCTX.led),g);
-    else cd().ledgers.push({id:uid(),...g});
-    const newId=MCTX.led||cd().ledgers[cd().ledgers.length-1].id;
+    else{const nl={id:uid(),...g};cd().ledgers.push(nl);newId=nl.id;}
     persist();
     if(MCTX.flyRow!=null&&VF){const i=MCTX.flyRow;while(VF.rows.length<=i)VF.rows.push({l:'',dr:'',cr:''});closeModal();applyLed(i,newId);toast('Account created & selected: '+name);return;}
     closeModal();toast(name+(MCTX.led?' updated':' account created'));
@@ -1814,9 +1814,9 @@ const ACTIONS={
   /* Reports & drill */
   'rep-view':t=>{REP.view=t.dataset.id;REP.drill=null;DRILLHIST.length=0;renderView();},
   'rep-go':t=>{REP.view=t.dataset.id;REP.drill=null;gotoTab('rep');},
-  'drill':t=>{pushDrill();REP.drill={g:t.dataset.g,side:t.dataset.side};renderRepBody();},
+  'drill':t=>{pushDrill();REP.drill={g:t.dataset.g};renderRepBody();},
   'drill-led':t=>{pushDrill();REP.view='ls';REP.led=t.dataset.led;REP.drill=null;renderView();},
-  'rep-period':()=>{$('#rep-ctl [data-f="rep-from"], #rep-ctl [data-f="rep-to"]')?.focus?.();const f=$('#rep-ctl [data-f="rep-from"]')||$('#rep-ctl [data-f="rep-to"]');if(f){f.focus();f.showPicker?.();}},
+  'rep-period':()=>{const f=$('#rep-ctl [data-f="rep-from"]')||$('#rep-ctl [data-f="rep-to"]');if(f){f.focus();f.showPicker?.();}},
   'rep-xls':()=>exportRep(),
   'rep-print':()=>window.print(),
   'exp-all':()=>exportAll(),
@@ -1835,10 +1835,6 @@ const ACTIONS={
     persist();toast('Company deleted');gotoTab('home');
   },
 };
-function refreshVchBar(){
-  const b=$('#main .vch3 .btbar');if(!b)return;
-  b.outerHTML=btbarVch();
-}
 
 /* ═══════════ Input handlers ═══════════ */
 const INP={
@@ -1849,10 +1845,10 @@ const INP={
     const i=+t.dataset.i;const q=t.value.trim().toLowerCase();
     if(VF.rows[i])VF.rows[i].l='';
     const dd=document.querySelector(`.led-dd[data-dd="${i}"]`);if(!dd)return;
-    if(!q){dd.hidden=true;LEDSEL=null;return;}
+    if(!q){dd.hidden=true;LEDSL=null;return;}
     const ls=cd().ledgers.filter(l=>l.name.toLowerCase().includes(q)).slice(0,12);
     LEDSEL={i,list:ls,sel:0};
-    if(!ls.length){dd.innerHTML=`<div class="led-o dim" style="cursor:default">No match — press <b>Alt+C</b> to create “${esc(t.value)}”</div>`;dd.hidden=false;return;}
+    if(!ls.length){dd.innerHTML=`<div class="led-o dim" style="cursor:default">No match — press <b>Alt+C</b> to create &ldquo;${esc(t.value)}&rdquo;</div>`;dd.hidden=false;return;}
     dd.innerHTML=ls.map((l,j)=>`<div class="led-o ${j===0?'on':''}" data-pick="${l.id}" data-dd="${i}"><span>${esc(l.name)}</span><small>${esc(groupOf(l).name)}</small></div>`).join('');
     dd.hidden=false;
   },
@@ -1895,19 +1891,10 @@ document.addEventListener('click',e=>{
   const o=e.target.closest('.led-o');
   if(o&&o.dataset.pick){applyLed(+o.dataset.dd,o.dataset.pick);return;}
   const t=e.target.closest('[data-act]');
-  if(t){
-    let act=t.dataset.act;
-    if(act==='vf-type'&&t.classList.contains('seg-b')===false&&act==='vf-type'&&!t.dataset.id){}
-    if(act.startsWith('vf-type|')===false){}
-    if(t.dataset.act==='vf-type'&&t.dataset.id){ACTIONS['vf-type'](t);return;}
-    if(t.dataset.act&&t.dataset.act.startsWith('vf-type|')){
-      const id=t.dataset.act.split('|')[1];
-      VF.type=id;if(!VF.edit)VF.no=autoNo(VF.type);
-      if(VF.type==='sl'||VF.type==='pu'){if(VF.items&&VF.items.length)syncItems();}else VF.items=[];
-      renderVForm();refreshVchBar();return;
-    }
-    if(ACTIONS[act])ACTIONS[act](t,e);
-  }
+  if(!t)return;
+  const act=t.dataset.act;
+  if(act.startsWith('vf-type|')){changeVchType(act.split('|')[1]);return;}
+  if(ACTIONS[act])ACTIONS[act](t,e);
 });
 ['input','change'].forEach(ev=>document.addEventListener(ev,e=>{
   const f=e.target.dataset?.f;if(f&&INP[f])INP[f](e.target,e);
@@ -1931,10 +1918,9 @@ document.addEventListener('focusout',e=>{
   }
 });
 document.addEventListener('keydown',e=>{
-  const typing=e.target.closest&&e.target.closest('input,select,textarea');
+  const typing=e.target.closest?e.target.closest('input,select,textarea'):null;
   const modalOpen=!!document.querySelector('#modal-root .modal');
   const palOpen=!!$('#pal-l');
-  /* Ctrl/Cmd shortcuts */
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();palOpen?closePal():openPal();return;}
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='m'){e.preventDefault();gotoTab('home');return;}
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='a'&&curTab==='vch'&&!modalOpen){e.preventDefault();showAccept();return;}
@@ -1945,13 +1931,11 @@ document.addEventListener('keydown',e=>{
     MCTX.flyRow=(f&&f.dataset&&f.dataset.f==='vf-ledtxt')?+f.dataset.i:null;
     openLedgerModal();return;
   }
-  /* Palette keys */
   if(palOpen){
     if(e.key==='ArrowDown'){e.preventDefault();PAL.sel=Math.min(PAL.sel+1,PAL.items.length-1);palRender();return;}
     if(e.key==='ArrowUp'){e.preventDefault();PAL.sel=Math.max(PAL.sel-1,0);palRender();return;}
     if(e.key==='Enter'){e.preventDefault();palRun(PAL.sel);return;}
   }
-  /* Ledger autocomplete keys */
   const ddv=document.querySelector('.led-dd:not([hidden])');
   if(ddv&&LEDSL&&typing&&typing.dataset.f==='vf-ledtxt'){
     if(e.key==='ArrowDown'||e.key==='ArrowUp'){
@@ -1973,7 +1957,6 @@ document.addEventListener('keydown',e=>{
     return;
   }
   if(modalOpen)return;
-  /* F-keys */
   if(e.key==='F2'){e.preventDefault();
     if(curTab==='vch'){const d=$('#vform [data-f="vf-date"]');if(d){d.focus();d.showPicker?.();}}
     else if(curTab==='rep'){const f=$('#rep-ctl [data-f="rep-from"]')||$('#rep-ctl [data-f="rep-to"]');if(f){f.focus();f.showPicker?.();}}
@@ -1981,14 +1964,9 @@ document.addEventListener('keydown',e=>{
   }
   if(curTab==='vch'){
     const fmap={F5:'py',F6:'rc',F7:'jr',F8:'sl',F9:'pu'};
-    if(fmap[e.key]){e.preventDefault();
-      VF.type=fmap[e.key];if(!VF.edit)VF.no=autoNo(VF.type);
-      if(VF.type==='sl'||VF.type==='pu'){if(VF.items&&VF.items.length)syncItems();}else VF.items=[];
-      renderVForm();refreshVchBar();return;
-    }
+    if(fmap[e.key]){e.preventDefault();changeVchType(fmap[e.key]);return;}
     if(e.key==='F4'){e.preventDefault();ACTIONS['vf-addrow']();return;}
   }
-  /* Gateway menu keys */
   if(curTab==='home'&&!typing&&!palOpen){
     if(e.key==='ArrowDown'){e.preventDefault();gwMove(1);return;}
     if(e.key==='ArrowUp'){e.preventDefault();gwMove(-1);return;}
@@ -1998,18 +1976,16 @@ document.addEventListener('keydown',e=>{
       if(it>=0){gwRun(it);return;}
     }
   }
-  /* Report letter shortcuts */
   if(curTab==='rep'&&!typing&&!palOpen){
     if(e.key.toLowerCase()==='p'){e.preventDefault();window.print();return;}
     if(e.key.toLowerCase()==='e'){e.preventDefault();exportRep();return;}
   }
-  /* Enter flow inside voucher form */
   if(e.key==='Enter'&&e.target.id==='onb-name'){ACTIONS['onb-go']();return;}
   if(e.key==='Enter'&&e.target.closest('#vform')&&!e.target.closest('button')&&e.target.type!=='date'&&!(typing&&typing.dataset.f==='vf-ledtxt')){
     e.preventDefault();
     const els=[...$('#vform').querySelectorAll('[data-f="vf-ledtxt"],[data-f="vf-dr"],[data-f="vf-cr"],select[data-f="vi-id"],input[data-f="vi-qty"],input[data-f="vi-rate"],input[data-f="vf-narr"]')];
     const i=els.indexOf(e.target);
-    if(i===els.length-1){if(!VF.edit)showAccept();else showAccept();}
+    if(i===els.length-1)showAccept();
     else els[i+1]?.focus();
   }
 });
