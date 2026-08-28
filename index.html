@@ -1,0 +1,1513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manavi — Books</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --paper:#F3EFE4; --card:#FBF8F0; --card-2:#F5F0E2;
+  --ink:#22261F; --ink-2:#575C50; --ink-3:#8B8E7E;
+  --line:#DED7C3; --line-strong:#C7BFa6;
+  --green:#1E5C43; --green-2:#153F2E; --green-soft:rgba(30,92,67,.09);
+  --red:#A63A26; --red-soft:rgba(166,58,38,.09);
+  --amber:#8F6A14; --amber-soft:rgba(160,120,26,.13);
+  --sb:#12362A; --sb-ink:#EDE7D4; --sb-dim:rgba(237,231,212,.55);
+}
+html{scrollbar-width:thin;scrollbar-color:#B9B19A transparent}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:#C4BBA2;border-radius:8px;border:2px solid var(--paper)}
+body{font-family:'Instrument Sans',sans-serif;background:var(--paper);color:var(--ink);font-size:14px;-webkit-font-smoothing:antialiased}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;opacity:.045;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E")}
+::selection{background:rgba(30,92,67,.2)}
+.mono{font-family:'IBM Plex Mono',monospace}
+.num{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;text-align:right}
+.neg{color:var(--red)}
+
+/* ---------- shell ---------- */
+#app{display:flex;min-height:100vh}
+#sidebar{width:226px;flex:0 0 226px;background:var(--sb);color:var(--sb-ink);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:26px 0 18px;position:sticky}
+#sidebar::after{content:'';position:absolute;top:26px;bottom:26px;left:10px;width:1px;
+  background-image:repeating-linear-gradient(180deg,rgba(237,231,212,.22) 0 6px,transparent 6px 13px)}
+.brand{padding:0 22px 20px;border-bottom:1px solid rgba(237,231,212,.14)}
+.brand-name{font:italic 600 28px/1 'Fraunces',serif}
+.brand-sub{margin-top:9px;font:500 8.5px 'IBM Plex Mono',monospace;letter-spacing:.26em;color:var(--sb-dim)}
+.snav{display:flex;flex-direction:column;gap:2px;padding-top:14px}
+.snav a{display:flex;align-items:center;gap:11px;padding:10px 22px;color:var(--sb-dim);text-decoration:none;
+  font:600 11.5px 'IBM Plex Mono',monospace;letter-spacing:.09em;text-transform:uppercase;border-radius:8px 0 0 8px;transition:.15s}
+.snav a svg{width:15px;height:15px;opacity:.85}
+.snav a:hover{color:var(--sb-ink);background:rgba(237,231,212,.06)}
+.snav a.active{background:var(--paper);color:var(--green-2)}
+.sfoot{margin-top:auto;padding:16px 20px 0;border-top:1px solid rgba(237,231,212,.14)}
+.co-chip{display:flex;gap:11px;align-items:center;min-width:0}
+.co-init{width:36px;height:36px;flex:none;border-radius:9px;background:var(--green);color:#F2EDDD;display:grid;place-items:center;font:600 15px 'Fraunces',serif}
+.co-name{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.co-fy{font:500 9.5px 'IBM Plex Mono',monospace;letter-spacing:.1em;color:var(--sb-dim);margin-top:3px}
+.main{flex:1;min-width:0;padding:34px 46px 90px}
+.viewwrap{max-width:1180px;margin:0 auto;animation:rise .3s ease both}
+@keyframes rise{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+
+/* ---------- typography & headers ---------- */
+.vhead{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;padding-bottom:16px;margin-bottom:24px;border-bottom:1px solid var(--ink);position:relative;flex-wrap:wrap}
+.vhead::after{content:'';position:absolute;left:0;right:0;bottom:-4px;height:1px;background:var(--line-strong)}
+.kicker{font:600 9.5px 'IBM Plex Mono',monospace;letter-spacing:.28em;color:var(--green);margin-bottom:9px}
+h1{font:600 28px/1.12 'Fraunces',serif;letter-spacing:-.01em}
+.vsub{margin-top:8px;color:var(--ink-2);font-size:13px}
+.vhead-actions{display:flex;gap:9px;flex-wrap:wrap}
+
+/* ---------- controls ---------- */
+.btn{display:inline-flex;align-items:center;gap:7px;font:600 12.5px 'Instrument Sans',sans-serif;padding:9px 14px;border-radius:7px;border:1px solid transparent;cursor:pointer;transition:.15s;letter-spacing:.01em}
+.btn svg{width:14px;height:14px}
+.btn-primary{background:var(--green);color:#F6F2E7}
+.btn-primary:hover{background:var(--green-2)}
+.btn-ghost{background:transparent;border-color:var(--line-strong);color:var(--ink)}
+.btn-ghost:hover{background:#ECE6D3}
+.btn-danger{background:var(--red);color:#F9F1E8}
+.btn-outline-danger{background:transparent;border-color:rgba(166,58,38,.45);color:var(--red)}
+.btn-outline-danger:hover{background:var(--red-soft)}
+.btn[disabled]{opacity:.42;cursor:not-allowed}
+.icon-btn{width:30px;height:30px;display:inline-grid;place-items:center;border-radius:6px;border:1px solid transparent;color:var(--ink-2);cursor:pointer;background:transparent;transition:.13s}
+.icon-btn:hover{background:#ECE6D3;color:var(--ink)}
+.icon-btn svg{width:14px;height:14px}
+.inp{background:#FFFEF9;border:1px solid var(--line-strong);border-radius:7px;padding:8.5px 11px;font:inherit;font-size:13px;color:var(--ink);transition:.15s;width:100%}
+.inp:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(30,92,67,.13)}
+select.inp{cursor:pointer}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+input[type=number]{-moz-appearance:textfield}
+label{display:block;font:600 9.5px 'IBM Plex Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px}
+.field{flex:1;min-width:0}
+.frow{display:flex;gap:12px;flex-wrap:wrap}
+a:focus-visible,button:focus-visible{outline:2px solid var(--green);outline-offset:1px}
+
+/* ---------- cards / stats ---------- */
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 1px 2px rgba(32,36,31,.04),0 10px 26px -20px rgba(32,36,31,.3)}
+.card-h{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:17px 20px 0}
+.card-t{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.2em;color:var(--ink-3);text-transform:uppercase}
+.cardfoot{padding:10px 20px 15px}
+.link{color:var(--green);font-weight:600;font-size:12.5px;text-decoration:none;display:inline-flex;gap:5px;align-items:center;cursor:pointer}
+.link svg{width:13px;height:13px}
+.dgrid{display:grid;gap:18px;margin-bottom:18px}
+.dg-top{grid-template-columns:5fr 7fr}
+.dg-bot{grid-template-columns:7fr 5fr}
+.statline{display:flex;background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:18px;overflow:hidden;flex-wrap:wrap}
+.st{flex:1;min-width:150px;padding:14px 20px}
+.st + .st{border-left:1px solid var(--line)}
+.st .lbl{margin-bottom:6px}
+.st .v{font:600 17px 'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums}
+.st .s{font-size:11.5px;color:var(--ink-3);margin-top:3px}
+.st.warn .v{color:var(--red)}
+.lbl{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.18em;color:var(--ink-3);text-transform:uppercase}
+
+/* ---------- dashboard ---------- */
+.pos{padding:20px 22px}
+.hero-num{font:600 42px/1.05 'Fraunces',serif;letter-spacing:-.02em;margin-top:9px}
+.hero-sub{display:flex;gap:10px;align-items:center;margin-top:9px;color:var(--ink-2);font-size:12.5px;flex-wrap:wrap}
+.trend{display:inline-flex;align-items:center;gap:4px;font:600 11px 'IBM Plex Mono',monospace;padding:3px 9px;border-radius:99px}
+.trend svg{width:12px;height:12px}
+.trend.up{color:var(--green);background:var(--green-soft)}
+.trend.down{color:var(--red);background:var(--red-soft)}
+.mini-accs{display:flex;gap:18px;margin-top:12px;font-size:11.5px;color:var(--ink-2);flex-wrap:wrap}
+.mini-accs b{font:600 11.5px 'IBM Plex Mono',monospace;color:var(--ink)}
+.pos-rows{margin-top:18px;border-top:1px solid var(--line)}
+.pos-row{display:flex;justify-content:space-between;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--line);font-size:13px;color:var(--ink-2)}
+.pos-row .num{font-size:12.5px;color:var(--ink)}
+.pos-row.total{font-weight:600;color:var(--ink);border-bottom:3px double var(--ink)}
+.pos-row.total .num{font-weight:600}
+.chart-card{padding:19px 22px 14px;display:flex;flex-direction:column}
+.legend{display:flex;gap:16px;font:500 9.5px 'IBM Plex Mono',monospace;letter-spacing:.1em;color:var(--ink-2);text-transform:uppercase;align-items:center}
+.sw{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.sw.solid{background:var(--green)}
+.sw.hatch{background:repeating-linear-gradient(45deg,#3A3E34 0 2px,#EFE9D8 2px 5px)}
+.month-strip{display:flex;border-top:1px solid var(--line);margin-top:auto;padding-top:13px}
+.ms{flex:1;padding:0 16px}
+.ms + .ms{border-left:1px solid var(--line)}
+.ms .lbl{font-size:8.5px}
+.ms .v{font:600 15px 'IBM Plex Mono',monospace;margin-top:5px;display:block}
+.ms .v.gain{color:var(--green)}
+.rowlist{padding:4px 0}
+.rrow{display:flex;align-items:center;gap:12px;padding:10px 20px;border-bottom:1px solid var(--line)}
+.rrow.click{cursor:pointer}
+.rrow.click:hover{background:rgba(30,92,67,.04)}
+.rrow:last-child{border-bottom:none}
+.r-date{font:500 10.5px 'IBM Plex Mono',monospace;color:var(--ink-3);width:62px;flex:none}
+.r-main{flex:1;min-width:0}
+.r-main b{display:block;font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r-main .sub{font-size:11.5px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;margin-top:2px}
+.r-amt{font:600 12.5px 'IBM Plex Mono',monospace;white-space:nowrap}
+.empty{padding:26px 20px;color:var(--ink-2);font-size:13px;display:flex;gap:10px;align-items:center}
+.empty svg{width:16px;height:16px;color:var(--green)}
+.refchip{font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.06em;border:1px solid var(--line-strong);padding:3px 7px;border-radius:4px;color:var(--ink-2);background:#F3EFE3;white-space:nowrap}
+.due-tag{font:500 10.5px 'IBM Plex Mono',monospace;color:var(--ink-3)}
+.due-tag.late{color:var(--red)}
+
+/* ---------- chips & stamps ---------- */
+.chip{display:inline-block;font:600 9.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;padding:4px 9px 3px;border-radius:99px;border:1px solid;text-transform:uppercase;white-space:nowrap}
+.chip.paid{color:var(--green);border-color:rgba(30,92,67,.35);background:var(--green-soft)}
+.chip.open{color:var(--amber);border-color:rgba(143,106,20,.35);background:var(--amber-soft)}
+.chip.overdue{color:var(--red);border-color:rgba(166,58,38,.35);background:var(--red-soft)}
+.stamp{display:inline-block;font:600 11px 'IBM Plex Mono',monospace;letter-spacing:.24em;text-transform:uppercase;padding:8px 14px 7px;border:2px solid currentColor;border-radius:4px;transform:rotate(-4deg);opacity:.92}
+.stamp.ok{color:var(--green)} .stamp.bad{color:var(--red)}
+
+/* ---------- tables ---------- */
+.tblwrap{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:0 1px 2px rgba(32,36,31,.04)}
+.scrollx{overflow-x:auto}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{font:600 9.5px 'IBM Plex Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);text-align:left;padding:11px 14px;border-bottom:1.5px solid var(--ink);white-space:nowrap}
+.tbl td{padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tbody tr:hover td{background:rgba(30,92,67,.035)}
+.th-r,.tbl td.num{text-align:right}
+.cell-memo b{font-weight:600}
+.cell-memo .sub{display:block;font-size:11.5px;color:var(--ink-3);margin-top:2px}
+.tbl .actions{white-space:nowrap;text-align:right}
+.chev{transition:.2s;display:inline-block}
+tr.expanded .chev{transform:rotate(180deg)}
+tr.jmain{cursor:pointer}
+tr.jlines td{background:var(--card-2);padding:0}
+.jlines-in{padding:4px 82px 13px 46px}
+.jline{display:grid;grid-template-columns:1fr 110px 110px;gap:10px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:12.5px;align-items:baseline}
+.jline:last-child{border-bottom:none}
+.jline .acc b{font-weight:600}
+.jline .lmemo{color:var(--ink-3);font-size:11.5px}
+.jline .num{font-size:12px}
+
+/* ---------- filter bar ---------- */
+.filterbar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+.search{position:relative;flex:1;min-width:200px;max-width:330px}
+.search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--ink-3);pointer-events:none}
+.search .inp{padding-left:33px}
+.filterbar .inp{width:auto}
+.filterbar .sep{color:var(--ink-3)}
+
+/* ---------- accounts ---------- */
+.acc-section{margin-bottom:28px}
+.acc-head{display:flex;justify-content:space-between;align-items:baseline;padding-bottom:9px;border-bottom:1.5px solid var(--ink)}
+.acc-head h3{font:600 11px 'IBM Plex Mono',monospace;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-2)}
+.acc-head .num{font-weight:600;font-size:13px}
+tr.accrow{cursor:pointer}
+
+/* ---------- statements ---------- */
+.rtabs{display:flex;gap:2px;border-bottom:1px solid var(--line-strong);margin-bottom:20px;flex-wrap:wrap}
+.rtab{font:600 11px 'IBM Plex Mono',monospace;letter-spacing:.13em;text-transform:uppercase;padding:10px 16px;color:var(--ink-3);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-1px}
+.rtab.active{color:var(--ink);border-bottom-color:var(--green)}
+.rep-ctl{display:flex;gap:12px;align-items:flex-end;margin-bottom:18px;flex-wrap:wrap}
+.rep-ctl label{margin-bottom:5px}
+.rep-ctl .inp{width:auto}
+.stmt{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:36px 42px;max-width:880px;position:relative;box-shadow:0 1px 2px rgba(32,36,31,.04);margin-bottom:30px}
+.stmt-head{text-align:center;margin-bottom:28px}
+.stmt-co{font:600 15px 'Fraunces',serif}
+.stmt-title{font:600 25px 'Fraunces',serif;margin-top:6px}
+.stmt-sub{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;color:var(--ink-2);margin-top:8px;text-transform:uppercase}
+.stmt-cols{display:grid;grid-template-columns:1fr 1fr;gap:0 46px;position:relative}
+.stmt-cols::before{content:'';position:absolute;left:50%;top:4px;bottom:4px;width:1px;background:var(--line)}
+.sec-t{font:600 10.5px 'IBM Plex Mono',monospace;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-2);padding:12px 0 8px;border-bottom:1.5px solid var(--ink);margin-bottom:4px}
+.sec-t:first-child{padding-top:0}
+.srow{display:flex;justify-content:space-between;gap:14px;padding:7.5px 0;border-bottom:1px solid var(--line);font-size:13px}
+.srow .n small{color:var(--ink-3);font-family:'IBM Plex Mono',monospace;font-size:10.5px;margin-right:7px}
+.srow.ind{padding-left:16px}
+.srow.sub{font-weight:600;border-bottom:1px solid var(--ink)}
+.srow.total{font-weight:600;border-bottom:3px double var(--ink);font-size:14.5px}
+.srow .pct{color:var(--ink-3);font:500 10.5px 'IBM Plex Mono',monospace;margin-left:9px}
+.stmt .stamp{position:absolute;right:44px;bottom:36px}
+.stmt-tbl tfoot td{border-top:1.5px solid var(--ink);border-bottom:3px double var(--ink);font-weight:600;padding:11px 14px}
+.code{font:500 10.5px 'IBM Plex Mono',monospace;color:var(--ink-3);margin-right:8px}
+
+/* ---------- modal ---------- */
+.modal-wrap{position:fixed;inset:0;background:rgba(24,26,22,.46);display:flex;align-items:flex-start;justify-content:center;padding:6vh 20px;overflow:auto;z-index:100;opacity:0;transition:.18s}
+.modal-wrap.open{opacity:1}
+.modal{background:var(--card);border:1px solid var(--line-strong);border-radius:12px;width:100%;box-shadow:0 30px 70px -30px rgba(15,20,15,.55);transform:translateY(12px) scale(.985);transition:.22s cubic-bezier(.2,.9,.3,1)}
+.modal-wrap.open .modal{transform:none}
+.mhead{display:flex;justify-content:space-between;align-items:center;padding:18px 22px 0}
+.mhead h3{font:600 19px 'Fraunces',serif}
+.mbody{padding:16px 22px 22px}
+.mbody.scroll{max-height:60vh;overflow:auto}
+.mfoot{display:flex;justify-content:flex-end;gap:10px;padding-top:16px;border-top:1px solid var(--line);margin-top:4px;align-items:center}
+.mfoot .hint{margin-right:auto;color:var(--ink-3);font-size:12.5px;font-style:italic;font-family:'Fraunces',serif}
+.confirm-msg{color:var(--ink-2);line-height:1.6;font-size:13.5px}
+
+/* journal-entry modal */
+.je-grid{display:grid;grid-template-columns:1.5fr 1.3fr 100px 100px 30px;gap:8px;align-items:center}
+.je-h{font:600 9px 'IBM Plex Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);padding:2px 0 5px}
+.je-row{margin-bottom:8px}
+.je-row input[type=number]{text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12.5px}
+.je-row.err .inp{border-color:var(--red);box-shadow:0 0 0 3px rgba(166,58,38,.1)}
+.beam-panel{background:repeating-linear-gradient(180deg,transparent 0 27px,rgba(34,38,31,.055) 27px 28px) var(--card-2);border:1px solid var(--line);border-radius:9px;padding:8px 10px 2px;margin:14px 0 16px}
+#beamSvg{width:100%;max-width:360px;display:block;margin:0 auto}
+#beamG,.pan{transform-box:view-box;transition:transform .45s cubic-bezier(.3,1.4,.5,1)}
+#beamG{transform-origin:160px 64px}
+.pan{transform-origin:0 0}
+.beam-bal{font:italic 600 11px 'Fraunces',serif;fill:var(--green);opacity:0;transition:opacity .3s}
+.beam-panel.bal .beam-bal{opacity:1}
+.beam-read{display:flex;align-items:center;justify-content:space-between;padding:2px 14px 12px}
+.br{display:flex;flex-direction:column;gap:3px}
+.br-k{font:600 9px 'IBM Plex Mono',monospace;letter-spacing:.2em;color:var(--ink-3);text-transform:uppercase}
+.br-v{font:600 14px 'IBM Plex Mono',monospace}
+.br-diff{font:600 10.5px 'IBM Plex Mono',monospace;letter-spacing:.08em;color:var(--red);text-transform:uppercase}
+.beam-panel.bal .br-diff{color:var(--green)}
+
+/* invoice / bill item rows */
+.item-grid{display:grid;grid-template-columns:2fr 60px 104px 1.25fr 96px 30px;gap:8px;align-items:center}
+.item-h{font:600 9px 'IBM Plex Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);padding:2px 0 5px}
+.item-row{margin-bottom:8px}
+.item-amt{font:600 12.5px 'IBM Plex Mono',monospace;text-align:right;font-variant-numeric:tabular-nums}
+.totbox{margin-left:auto;width:270px;margin-top:8px}
+.totbox .srow{font-size:13px}
+.totbox .srow.total{font-size:15px}
+
+/* invoice document */
+.inv-doc{background:#FFFEF8;border:1px solid var(--line-strong);border-radius:8px;padding:34px 38px;position:relative;box-shadow:0 14px 34px -20px rgba(32,36,31,.4)}
+.inv-top{display:flex;justify-content:space-between;gap:24px;padding-bottom:20px;border-bottom:1px solid var(--ink);position:relative;flex-wrap:wrap}
+.inv-top::after{content:'';position:absolute;left:0;right:0;bottom:-4px;height:1px;background:var(--line-strong)}
+.inv-co{font:600 21px 'Fraunces',serif}
+.inv-addr{color:var(--ink-2);font-size:12.5px;margin-top:6px;line-height:1.5}
+.inv-meta{text-align:right}
+.inv-meta h3{font:italic 600 24px 'Fraunces',serif}
+.inv-meta .mono{font-size:12px;color:var(--ink-2)}
+.inv-meta .stamp{margin-top:12px}
+.inv-billto{margin:22px 0 4px;font-size:12.5px}
+.inv-billto b{display:block;font-size:15px;margin-top:7px}
+.inv-tot{margin-left:auto;width:280px;margin-top:12px}
+.inv-tot .srow.big{font-size:16px}
+.inv-note{margin-top:32px;padding-top:14px;border-top:1px solid var(--line);color:var(--ink-2);font:italic 400 13px 'Fraunces',serif}
+
+/* toast */
+#toast-root{position:fixed;right:22px;bottom:22px;z-index:300;display:flex;flex-direction:column;gap:10px}
+.toast{display:flex;gap:10px;align-items:center;background:var(--ink);color:#F3EFE2;padding:12px 16px;border-radius:9px;font-size:13px;box-shadow:0 12px 30px -10px rgba(0,0,0,.45);opacity:0;transform:translateY(8px);transition:.25s;max-width:380px}
+.toast.show{opacity:1;transform:none}
+.toast svg{width:16px;height:16px;flex:none}
+.toast.ok svg{color:#7FC8A4}
+.toast.warn svg{color:#E4B04A}
+.toast.err svg{color:#E58A76}
+
+/* settings */
+.set-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+.set-card{padding:22px}
+.set-card h3{font:600 16px 'Fraunces',serif;margin-bottom:4px}
+.set-card .sub{color:var(--ink-2);font-size:12.5px;margin-bottom:18px}
+.danger-zone{border-color:rgba(166,58,38,.35)}
+.kv{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);font-size:12.5px;color:var(--ink-2)}
+.kv b{font:600 12px 'IBM Plex Mono',monospace;color:var(--ink)}
+
+.spark{width:100%;max-width:290px;display:block;margin-top:14px}
+.bar-svg{width:100%;display:block}
+.bar-svg .mlab{font:500 9.5px 'IBM Plex Mono',monospace;fill:var(--ink-3)}
+.bar-svg .mlab.cur{fill:var(--ink);font-weight:600}
+.bar-svg .glab{font:500 9px 'IBM Plex Mono',monospace;fill:var(--ink-3)}
+.barg:hover{opacity:.82}
+
+@media(max-width:1080px){.dg-top,.dg-bot{grid-template-columns:1fr}}
+@media(max-width:760px){.stmt-cols{grid-template-columns:1fr}.stmt-cols::before{display:none}}
+@media(max-width:900px){
+  #sidebar{width:62px;flex-basis:62px;padding-top:20px}
+  .brand{padding:0 0 16px;text-align:center;border:none}
+  .brand-name{font-size:24px}.brand-sub{display:none}
+  .snav a{justify-content:center;padding:12px 0;margin:0 9px;border-radius:8px}
+  .snav a span{display:none}
+  .sfoot{padding:14px 10px 0}.co-chip{justify-content:center}.co-name,.co-fy{display:none}
+  .main{padding:22px 18px 70px}
+  .st{min-width:100%}.st + .st{border-left:none;border-top:1px solid var(--line)}
+  .month-strip{flex-direction:column;gap:12px}.ms + .ms{border-left:none}
+  .stmt{padding:24px 18px}
+  .je-grid{grid-template-columns:1.4fr 90px 90px 30px}
+  .je-grid .je-memo-c{display:none}
+  .item-grid{grid-template-columns:2fr 56px 90px 84px 30px}
+  .item-grid .item-acc-c{display:none}
+}
+@media print{
+  body::after{display:none}
+  body *{visibility:hidden}
+  .print-area,.print-area *{visibility:visible}
+  .print-area{position:fixed;inset:0;background:#fff;border:none;box-shadow:none;max-width:none;padding:24px;overflow:visible}
+  body{background:#fff}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar"></aside>
+  <main class="main"><div id="view"></div></main>
+</div>
+<div id="modal-root"></div>
+<div id="toast-root"></div>
+
+<script>
+/* =====================================================
+   Manavi Books — a self-contained double-entry ledger
+   ===================================================== */
+
+/* ---------- tiny utilities ---------- */
+const $  = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const r2  = v => Math.round((+v || 0) * 100) / 100;
+const num = v => { const n = parseFloat(v); return isFinite(n) ? n : 0; };
+const pad = (n,l=2) => String(n).padStart(l,'0');
+const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const todayISO = () => { const d = new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); };
+const isoOf = d => d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const addDays = (iso,n) => { const [y,m,d] = iso.split('-').map(Number); return isoOf(new Date(y, m-1, d+n)); };
+const daysBetween = (a,b) => Math.round((new Date(b) - new Date(a)) / 864e5);
+const fmtDate = iso => { if(!iso) return ''; const [y,m,d] = iso.split('-'); return (+d)+' '+MON[+m-1]+' \u2019'+y.slice(2); };
+const monthStartDate = off => new Date(new Date().getFullYear(), new Date().getMonth()-off, 1);
+const monthRange = off => { const s = monthStartDate(off); const e = new Date(s.getFullYear(), s.getMonth()+1, 0); return { from: isoOf(s), to: isoOf(e) }; };
+
+/* ---------- formatting ---------- */
+function fmt(n){
+  n = r2(n);
+  const c = state.company, neg = n < -0.004, v = Math.abs(n);
+  const sp = /[A-Za-z]/.test(c.symbol) ? ' ' : '';
+  const s = c.symbol + sp + v.toLocaleString(c.locale, {minimumFractionDigits:2, maximumFractionDigits:2});
+  return neg ? '('+s+')' : s;
+}
+function fmtC(n){
+  const c = state.company, v = Math.abs(n), s = c.symbol;
+  const f = (x,d) => x.toFixed(d).replace(/\.0$/,'');
+  if(c.locale === 'en-IN'){
+    if(v >= 1e7) return s+f(v/1e7, v >= 1e8 ? 0 : 1)+'Cr';
+    if(v >= 1e5) return s+f(v/1e5, v >= 1e6 ? 0 : 1)+'L';
+  } else {
+    if(v >= 1e9) return s+f(v/1e9,1)+'B';
+    if(v >= 1e6) return s+f(v/1e6, v >= 1e7 ? 0 : 1)+'M';
+    if(v >= 1e3) return s+f(v/1e3, v >= 1e4 ? 0 : 1)+'k';
+  }
+  return s + Math.round(v).toLocaleString(c.locale);
+}
+
+/* ---------- state ---------- */
+const KEY = 'manavi-books-v1';
+let state = null;
+const ui = {
+  view:'dashboard',
+  journal:{q:'', acc:'', from:'', to:''},
+  report:'tb',
+  rep:{from:'', to:''},
+  repAcc:''
+};
+const save = () => localStorage.setItem(KEY, JSON.stringify(state));
+
+/* ---------- chart of accounts & the posting engine ---------- */
+const TYPE_LABEL = {asset:'Assets', liability:'Liabilities', equity:'Equity', revenue:'Revenue', expense:'Expenses'};
+
+function postEntry({date, ref, memo, lines, linked}){
+  const id = 'e' + (state.seq.entry++);
+  state.journal.push({
+    id, n: state.seq.entry, date, ref: ref||'', memo: memo||'', linked: linked||null,
+    lines: lines.map(l => ({acc:l.acc, dr:r2(l.dr||0), cr:r2(l.cr||0), memo:l.memo||''}))
+  });
+  return id;
+}
+const accById = id => state.accounts.find(a => a.id === id);
+const typeAccounts = t => state.accounts.filter(a => a.type === t).sort((a,b)=>a.code.localeCompare(b.code,undefined,{numeric:true}));
+
+function acctRaw(id, from, to){
+  let d=0, c=0;
+  for(const e of state.journal){
+    if(from && e.date < from) continue;
+    if(to   && e.date > to)   continue;
+    for(const l of e.lines) if(l.acc === id){ d += l.dr; c += l.cr; }
+  }
+  return r2(d - c);
+}
+const nat = (id, from='', to='') => { const a = accById(id); const raw = acctRaw(id, from, to); return a.normalDebit ? raw : -raw; };
+const typeNatSum = (t, from='', to='') => typeAccounts(t).reduce((s,a)=>s+nat(a.id,from,to), 0);
+const cashAccounts = () => state.accounts.filter(a => a.cash);
+const AR = () => state.accounts.find(a => a.ar);
+const AP = () => state.accounts.find(a => a.ap);
+const TAXACC = () => state.accounts.find(a => a.tax);
+const OBE = () => state.accounts.find(a => a.obe);
+const accOptions = () => state.accounts.slice().sort((a,b)=>a.code.localeCompare(b.code,undefined,{numeric:true}))
+  .map(a=>`<option value="${a.id}">${a.code} · ${esc(a.name)}</option>`).join('');
+const typeAccOptions = t => typeAccounts(t).map(a=>`<option value="${a.id}">${a.code} · ${esc(a.name)}</option>`).join('');
+
+function fyStartISO(){
+  const m = state.company.fyStart, now = new Date();
+  const y = (now.getMonth()+1 >= m) ? now.getFullYear() : now.getFullYear()-1;
+  return `${y}-${pad(m)}-01`;
+}
+function fyLabel(){
+  const m = state.company.fyStart, now = new Date();
+  const y = (now.getMonth()+1 >= m) ? now.getFullYear() : now.getFullYear()-1;
+  return `FY ${MON[m-1]} ${y} \u2013 ${MON[m-1]} ${y+1}`;
+}
+
+/* statuses */
+const invStatus  = iv => iv.paid >= iv.total - 0.005 ? 'paid' : (iv.due < todayISO() ? 'overdue' : 'open');
+const billStatus = b  => b.paid  >= b.total  - 0.005 ? 'paid' : (b.due  < todayISO() ? 'overdue' : 'open');
+const chip = st => { const m = {paid:'paid', open:'open', overdue:'overdue'}; return `<span class="chip ${m[st]}">${st}</span>`; };
+
+/* ---------- seed data (7 months of believable books) ---------- */
+function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+
+function seedData(){
+  const R = mulberry32(20250611);
+  const ri = (a,b) => a + Math.floor(R()*(b-a+1));
+  const pick = arr => arr[Math.floor(R()*arr.length)];
+  const T = new Date(), TODAY = todayISO();
+  const mk = (off,day) => isoOf(new Date(T.getFullYear(), T.getMonth()-off, day));
+
+  state = {
+    version:1,
+    company:{ name:'Manavi Textiles Pvt. Ltd.', address:'14, Loom Street, Coimbatore 641012', symbol:'\u20B9', locale:'en-IN', fyStart:4 },
+    accounts:[], journal:[], invoices:[], bills:[],
+    seq:{entry:1, inv:1, bill:1}
+  };
+  const A = (code,name,type,extra={}) => { const a = {id:'a'+code, code, name, type, normalDebit:(type==='asset'||type==='expense'), ...extra}; state.accounts.push(a); return a; };
+  const cash=A('1000','Cash on Hand','asset',{cash:true});
+  const bank=A('1010','Bank \u2014 Current','asset',{cash:true});
+  const ar=A('1100','Accounts Receivable','asset',{ar:true});
+  const inventory=A('1200','Inventory','asset');
+  const equipment=A('1500','Office Equipment','asset');
+  const ap=A('2000','Accounts Payable','liability',{ap:true});
+  A('2100','Sales Tax Payable','liability',{tax:true});
+  const loan=A('2200','Bank Loan','liability');
+  const equity=A('3000',"Owner's Equity",'equity');
+  const obe=A('3100','Opening Balance Equity','equity',{obe:true});
+  const sales=A('4000','Sales \u2014 Goods','revenue');
+  const services=A('4100','Service Revenue','revenue');
+  const cogs=A('5000','Cost of Goods Sold','expense',{group:'cogs'});
+  const salaries=A('6000','Salaries & Wages','expense');
+  const rent=A('6100','Rent','expense');
+  const utilities=A('6200','Utilities','expense');
+  const marketing=A('6300','Marketing & Advertising','expense');
+  const software=A('6400','Software & Subscriptions','expense');
+  const supplies=A('6500','Office Supplies','expense');
+  const professional=A('6600','Professional Fees','expense');
+  const interest=A('6700','Interest Expense','expense');
+
+  const post = (date,ref,memo,lines,linked) => postEntry({date,ref,memo,lines,linked});
+  const CUSTOMERS = ['Mehta Industries','Sharma Trading Co.','Kavya Boutique','Deccan Supplies','Lotus Interiors','Ravi Electricals','Zenith Distributors','Northline Traders'];
+  const VENDORS   = ['Banaras Yarn Mills','Deccan Dye House','Kavery Logistics','Metro Packaging','Suman Hardware'];
+  const GOODS     = ['Assorted fabric bales','Handloom batch','Cotton yarn (per bale)','Dyed textile lot','Garment carton'];
+  const SERVICES  = ['Design consultation','Bulk order logistics','Tailoring services','Quality inspection'];
+
+  /* opening day */
+  const d0 = mk(6,1);
+  post(d0,'CAP-1','Opening capital invested',[{acc:bank.id,dr:450000},{acc:equity.id,cr:450000}]);
+  post(d0,'CAP-2','Opening stock of materials',[{acc:inventory.id,dr:120000},{acc:obe.id,cr:120000}]);
+  post(d0,'CAP-3','Looms & office equipment purchased',[{acc:equipment.id,dr:96000},{acc:bank.id,cr:96000}]);
+  post(d0,'FIN-1','Business term loan sanctioned',[{acc:bank.id,dr:200000},{acc:loan.id,cr:200000}]);
+
+  for(let off=6; off>=0; off--){
+    const ym = mk(off,1).slice(0,7);
+    const put = (day,fn) => { const d = mk(off,day); if(d <= TODAY) fn(d); };
+
+    put(1,  d=>post(d,'PAYROLL-'+ym,'Monthly salaries & wages',[{acc:salaries.id,dr:78000},{acc:bank.id,cr:78000}]));
+    put(3,  d=>post(d,'RENT-'+ym,'Office & warehouse rent',[{acc:rent.id,dr:32000},{acc:bank.id,cr:32000}]));
+    put(5,  d=>post(d,'SUBS-'+ym,'Software subscriptions',[{acc:software.id,dr:3400},{acc:bank.id,cr:3400}]));
+    put(10, d=>post(d,'EMI-'+ym,'Bank loan instalment',[{acc:loan.id,dr:9900},{acc:interest.id,dr:2600},{acc:bank.id,cr:12500}]));
+    put(16, d=>{ const u=ri(3600,7200); post(d,'UTIL-'+ym,'Electricity & water',[{acc:utilities.id,dr:u},{acc:bank.id,cr:u}]); });
+    const mkt = ri(1,2);
+    for(let k=0;k<mkt;k++) put(ri(2,26), d=>{ const m=ri(4000,22000); post(d,'MKTG','Campaign spend',[{acc:marketing.id,dr:m},{acc:bank.id,cr:m}]); });
+    if(R()<.5) put(ri(2,26), d=>{ const s=ri(900,5200); post(d,'OFFICE','Office supplies',[{acc:supplies.id,dr:s},{acc:bank.id,cr:s}]); });
+    if(R()<.3) put(ri(2,26), d=>{ const p=ri(8000,25000); post(d,'LEGAL','Professional fees',[{acc:professional.id,dr:p},{acc:bank.id,cr:p}]); });
+
+    /* vendor bills for materials */
+    const pn = ri(3,4);
+    for(let k=0;k<pn;k++){
+      const d = mk(off,ri(2,26)); if(d > TODAY) continue;
+      const amt = ri(30000,75000), vendor = pick(VENDORS);
+      const no = 'BILL-'+pad(state.seq.bill++,3);
+      const eid = post(d,no,'Materials purchased \u2014 '+vendor,[{acc:inventory.id,dr:amt},{acc:ap.id,cr:amt,memo:vendor}],'bill:bl-'+no);
+      const bill = {id:'bl-'+no,no,vendor,date:d,due:addDays(d,ri(15,40)),
+        items:[{desc:'Materials & stock purchase',qty:1,price:amt,acc:inventory.id}],total:amt,paid:0,entryId:eid};
+      if(R()<.8){ const pd = addDays(d,ri(8,32)); if(pd <= TODAY){
+        post(pd,'PAY-'+no,'Payment \u2014 '+vendor,[{acc:ap.id,dr:amt},{acc:bank.id,cr:amt}],'pay:bl-'+no); bill.paid = amt; } }
+      state.bills.push(bill);
+    }
+
+    /* sales invoices */
+    const sn = ri(9,13);
+    for(let k=0;k<sn;k++){
+      const d = mk(off,ri(1,27)); if(d > TODAY) continue;
+      const customer = pick(CUSTOMERS), goods = R()<.7;
+      const nIt = ri(1,3); const items=[]; let sub=0;
+      for(let j=0;j<nIt;j++){
+        const it = goods
+          ? {desc:pick(GOODS),    qty:ri(3,14), price:ri(1800,6500),  acc:sales.id}
+          : {desc:pick(SERVICES), qty:ri(1,4),  price:ri(6000,22000), acc:services.id};
+        items.push(it); sub += it.qty*it.price;
+      }
+      sub = r2(sub);
+      const no = 'INV-'+pad(state.seq.inv++,3);
+      const lines = [{acc:ar.id, dr:sub}];
+      items.forEach(it=>lines.push({acc:it.acc, cr:r2(it.qty*it.price), memo:it.desc}));
+      const eid = post(d,no,'Invoice \u2014 '+customer, lines, 'inv:iv-'+no);
+      if(goods){ const cg = r2(sub*0.56);
+        post(d,'COGS-'+no,'Cost of goods sold \u2014 '+customer,[{acc:cogs.id,dr:cg},{acc:inventory.id,cr:cg}],'inv:iv-'+no); }
+      const due = addDays(d,ri(15,40)); let pay = 0;
+      if(R()<.78){ const pd = addDays(d,ri(2,38)); if(pd <= TODAY){
+        post(pd,'RCT-'+no,'Payment received \u2014 '+customer,[{acc:bank.id,dr:sub},{acc:ar.id,cr:sub}],'pay:iv-'+no); pay = sub; } }
+      state.invoices.push({id:'iv-'+no,no,customer,date:d,due,items,taxRate:0,subtotal:sub,total:sub,paid:pay,entryId:eid});
+    }
+  }
+  save();
+}
+
+/* ---------- derived series ---------- */
+function monthlySeries(n){
+  const out = [];
+  for(let i=n-1;i>=0;i--){
+    const {from,to} = monthRange(i);
+    out.push({
+      label: MON[monthStartDate(i).getMonth()],
+      income: typeNatSum('revenue',from,to),
+      expense: typeNatSum('expense',from,to),
+      cash: cashAccounts().reduce((t,a)=>t+nat(a.id,'',to),0)
+    });
+  }
+  return out;
+}
+
+/* ---------- icons / toast / modals ---------- */
+const refreshIcons = () => { try{ window.lucide && lucide.createIcons(); }catch(e){} };
+function toast(msg, kind='ok'){
+  const t = document.createElement('div');
+  t.className = 'toast '+kind;
+  t.innerHTML = `<i data-lucide="${kind==='ok'?'circle-check':kind==='warn'?'triangle-alert':'circle-alert'}"></i><span>${esc(msg)}</span>`;
+  $('#toast-root').appendChild(t); refreshIcons();
+  requestAnimationFrame(()=>t.classList.add('show'));
+  setTimeout(()=>{ t.classList.remove('show'); setTimeout(()=>t.remove(),260); }, 3600);
+}
+function openModal(html, opts={}){
+  const wrap = document.createElement('div');
+  wrap.className = 'modal-wrap';
+  wrap.innerHTML = `<div class="modal" style="max-width:${opts.w||680}px">${html}</div>`;
+  $('#modal-root').appendChild(wrap);
+  requestAnimationFrame(()=>wrap.classList.add('open'));
+  wrap.addEventListener('mousedown', e=>{ if(e.target===wrap) closeModal(wrap); });
+  refreshIcons();
+  return wrap;
+}
+function closeModal(w){ if(!w){ $$('.modal-wrap').forEach(x=>x.remove()); return; } w.classList.remove('open'); setTimeout(()=>w.remove(),190); }
+const closeAllModals = () => $$('.modal-wrap').forEach(x=>x.remove());
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ const m=$$('.modal-wrap').pop(); if(m) closeModal(m); } });
+function confirmModal({title,msg,label='Confirm',onYes}){
+  const w = openModal(`
+    <div class="mhead"><h3>${esc(title)}</h3><button class="icon-btn" data-action="close-modal"><i data-lucide="x"></i></button></div>
+    <div class="mbody">
+      <p class="confirm-msg">${esc(msg)}</p>
+      <div class="mfoot"><button class="btn btn-ghost" data-action="close-modal">Cancel</button>
+      <button class="btn btn-danger" id="cfYes">${esc(label)}</button></div>
+    </div>`, {w:440});
+  w.querySelector('#cfYes').onclick = ()=>{ closeModal(w); onYes(); };
+}
+
+/* ---------- sidebar & shell ---------- */
+const NAV = [
+  {id:'dashboard', icon:'book-open',      label:'Dashboard'},
+  {id:'journal',   icon:'notebook-pen',   label:'Journal'},
+  {id:'invoices',  icon:'file-text',      label:'Invoices'},
+  {id:'bills',     icon:'receipt',        label:'Bills'},
+  {id:'accounts',  icon:'list-tree',      label:'Accounts'},
+  {id:'reports',   icon:'clipboard-list', label:'Reports'},
+  {id:'settings',  icon:'settings',       label:'Settings'}
+];
+function initials(name){ return name.split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase(); }
+
+function renderSidebar(){
+  $('#sidebar').innerHTML = `
+    <div class="brand"><div class="brand-name">Manavi</div><div class="brand-sub">BOOKS \u00B7 DOUBLE-ENTRY</div></div>
+    <nav class="snav">${NAV.map(n=>`
+      <a href="#" data-action="nav" data-view="${n.id}" class="${ui.view===n.id?'active':''}">
+        <i data-lucide="${n.icon}"></i><span>${n.label}</span></a>`).join('')}
+    </nav>
+    <div class="sfoot"><div class="co-chip">
+      <div class="co-init">${esc(initials(state.company.name))}</div>
+      <div style="min-width:0"><div class="co-name">${esc(state.company.name)}</div><div class="co-fy">${fyLabel()}</div></div>
+    </div></div>`;
+}
+
+function vhead(kicker,title,sub,actions=''){
+  return `<div class="vhead"><div><div class="kicker">${kicker}</div><h1>${title}</h1><p class="vsub">${sub}</p></div>
+  <div class="vhead-actions">${actions}</div></div>`;
+}
+
+/* ---------- dashboard ---------- */
+function sparkSVG(vals){
+  const W=270,H=56,P=5, min=Math.min(...vals), max=Math.max(...vals), span=(max-min)||1;
+  const pts = vals.map((v,i)=>[P+(W-2*P)*i/(vals.length-1), P+(H-2*P)*(1-(v-min)/span)]);
+  const line = pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  const last = pts[pts.length-1];
+  return `<svg viewBox="0 0 ${W} ${H}" class="spark">
+    <path d="${line} L ${last[0].toFixed(1)} ${H-P} L ${pts[0][0].toFixed(1)} ${H-P} Z" fill="rgba(30,92,67,.09)"/>
+    <path d="${line}" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="3.2" fill="var(--green)" stroke="#FBF8F0" stroke-width="1.5"/></svg>`;
+}
+function niceMax(v){
+  const p = Math.pow(10, Math.floor(Math.log10(v||1))), d = v/p;
+  return (d<=1?1:d<=2?2:d<=2.5?2.5:d<=5?5:10)*p;
+}
+function barChartSVG(series){
+  const W=580,H=236,L=56,T=16,B=198,Rr=W-12;
+  const max = niceMax(Math.max(1,...series.map(s=>Math.max(s.income,s.expense))));
+  const gw = (Rr-L)/series.length, bw = Math.min(20, gw*0.26);
+  let g = '';
+  for(let i=1;i<=4;i++){
+    const y = B-(B-T)*i/4;
+    g += `<line x1="${L}" y1="${y}" x2="${Rr}" y2="${y}" stroke="var(--line)" stroke-width="1"/>
+          <text class="glab" x="${L-8}" y="${y+3}" text-anchor="end">${fmtC(max*i/4)}</text>`;
+  }
+  let bars = '';
+  series.forEach((s,i)=>{
+    const cx = L+gw*i+gw/2;
+    const ha = (s.income/max)*(B-T), hb = (s.expense/max)*(B-T);
+    bars += `<g class="barg">
+      <rect x="${(cx-bw-3).toFixed(1)}" y="${(B-ha).toFixed(1)}" width="${bw.toFixed(1)}" height="${ha.toFixed(1)}" rx="2" fill="var(--green)"/>
+      <rect x="${(cx+3).toFixed(1)}" y="${(B-hb).toFixed(1)}" width="${bw.toFixed(1)}" height="${hb.toFixed(1)}" rx="2" fill="url(#hx)"/>
+      <rect x="${(L+gw*i).toFixed(1)}" y="${T}" width="${gw.toFixed(1)}" height="${B-T}" fill="transparent"><title>${s.label} \u00B7 Income ${fmt(s.income)} \u00B7 Expenses ${fmt(s.expense)}</title></rect>
+      <text class="mlab ${i===series.length-1?'cur':''}" x="${cx.toFixed(1)}" y="${B+18}" text-anchor="middle">${s.label}</text></g>`;
+  });
+  return `<svg class="bar-svg" viewBox="0 0 ${W} ${H}">
+    <defs><pattern id="hx" width="5" height="5" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+      <rect width="5" height="5" fill="#EFE9D8"/><rect width="2.4" height="5" fill="#3A3E34"/></pattern></defs>
+    ${g}<line x1="${L}" y1="${B}" x2="${Rr}" y2="${B}" stroke="var(--ink)" stroke-width="1.25"/>${bars}</svg>`;
+}
+
+function renderDashboard(){
+  const t = todayISO();
+  const cashNow = cashAccounts().reduce((s,a)=>s+nat(a.id,'',''),0);
+  const ar = nat(AR().id), ap = nat(AP().id);
+  const netPos = typeNatSum('asset') - typeNatSum('liability');
+  const mr = monthRange(0);
+  const mRev = typeNatSum('revenue',mr.from,mr.to), mExp = typeNatSum('expense',mr.from,mr.to);
+  const series = monthlySeries(7), cashes = series.map(s=>s.cash);
+  const prev = cashes[cashes.length-2] || 0;
+  const chg = prev ? (cashes[cashes.length-1]-prev)/Math.abs(prev)*100 : 0;
+  const unpaidInv = state.invoices.filter(iv=>invStatus(iv)!=='paid').sort((a,b)=>a.due.localeCompare(b.due)).slice(0,4);
+  const unpaidBills = state.bills.filter(b=>billStatus(b)!=='paid').sort((a,b)=>a.due.localeCompare(b.due)).slice(0,3);
+  const recent = [...state.journal].sort((a,b)=> b.date.localeCompare(a.date) || b.n-a.n).slice(0,7);
+  const count = state.journal.length;
+
+  return `<div class="viewwrap">
+    ${vhead('OVERVIEW','Financial overview',
+      `${esc(state.company.name)} \u00B7 books through ${fmtDate(t)} \u00B7 ${count} entries posted`)}
+    <div class="dgrid dg-top">
+      <div class="card pos">
+        <div class="lbl">Cash &amp; bank</div>
+        <div class="hero-num anim-num data-vals="${cashNow}"></div>
+        <div class="hero-sub">
+          <span class="trend ${chg>=0?'up':'down'}"><i data-lucide="${chg>=0?'trending-up':'trending-down'}"></i>${Math.abs(chg).toFixed(1)}% mo</span>
+          <span>seven-month cash trail</span>
+        </div>
+        ${sparkSVG(cashes)}
+        <div class="mini-accs">${cashAccounts().map(a=>`<span>${esc(a.name)} <b>${fmt(nat(a.id))}</b></span>`).join('')}</div>
+        <div class="pos-rows">
+          <div class="pos-row"><span>Receivables outstanding</span><span class="num">${fmt(ar)}</span></div>
+          <div class="pos-row"><span>Payables outstanding</span><span class="num">${fmt(ap)}</span></div>
+          <div class="pos-row total"><span>Net position</span><span class="num">${fmt(netPos)}</span></div>
+        </div>
+      </div>
+      <div class="card chart-card">
+        <div class="card-h" style="padding:0"><span class="card-t">Income vs expenses \u2014 last 7 months</span>
+          <span class="legend"><span><span class="sw solid"></span>Income</span><span><span class="sw hatch"></span>Expenses</span></span></div>
+        <div style="margin-top:14px">${barChartSVG(series)}</div>
+        <div class="month-strip">
+          <div class="ms"><span class="lbl">This month income</span><span class="v">${fmt(mRev)}</span></div>
+          <div class="ms"><span class="lbl">This month expenses</span><span class="v">${fmt(mExp)}</span></div>
+          <div class="ms"><span class="lbl">Net</span><span class="v ${mRev-mExp>=0?'gain':''}">${fmt(mRev-mExp)}</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="dgrid dg-bot">
+      <div class="card">
+        <div class="card-h"><span class="card-t">Recent entries</span></div>
+        <div class="rowlist">${recent.map(e=>`
+          <div class="rrow click" data-action="goto" data-to="journal">
+            <span class="r-date">${fmtDate(e.date)}</span>
+            <span class="refchip">${esc(e.ref||'\u2014')}</span>
+            <div class="r-main"><b>${esc(e.memo||'(untitled entry)')}</b></div>
+            <span class="r-amt">${fmt(e.lines.reduce((s,l)=>s+l.dr,0))}</span>
+          </div>`).join('')}
+        </div>
+        <div class="cardfoot"><a class="link" data-action="goto" data-to="journal">Open the journal <i data-lucide="arrow-right"></i></a></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><span class="card-t">Outstanding</span></div>
+        ${unpaidInv.length+unpaidBills.length === 0
+          ? `<div class="empty"><i data-lucide="circle-check"></i>Nothing outstanding \u2014 receivables and payables are clear.</div>`
+          : `<div class="rowlist">
+              ${unpaidInv.map(iv=>{ const st=invStatus(iv), late=daysBetween(iv.due,t); return `
+              <div class="rrow">
+                <span class="refchip">${iv.no}</span>
+                <div class="r-main"><b>${esc(iv.customer)}</b>
+                  <span class="due-tag ${st==='overdue'?'late':''}">${st==='overdue'?Math.abs(late)+'d overdue':'due '+fmtDate(iv.due)}</span></div>
+                <span class="r-amt">${fmt(iv.total-iv.paid)}</span>
+                <button class="icon-btn" title="Record payment" data-action="pay-invoice" data-id="${iv.id}"><i data-lucide="banknote"></i></button>
+              </div>`;}).join('')}
+              ${unpaidBills.map(b=>{ const st=billStatus(b), late=daysBetween(b.due,t); return `
+              <div class="rrow">
+                <span class="refchip">${b.no}</span>
+                <div class="r-main"><b>${esc(b.vendor)}</b>
+                  <span class="due-tag ${st==='overdue'?'late':''}">${st==='overdue'?Math.abs(late)+'d overdue':'due '+fmtDate(b.due)}</span></div>
+                <span class="r-amt">${fmt(b.total-b.paid)}</span>
+                <button class="icon-btn" title="Pay bill" data-action="pay-bill" data-id="${b.id}"><i data-lucide="banknote"></i></button>
+              </div>`;}).join('')}
+            </div>`}
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ---------- journal ---------- */
+function entrySummary(e){
+  const names = [...new Set(e.lines.map(l=>{ const a=accById(l.acc); return a.code+' '+a.name; }))];
+  return names.slice(0,3).join(' \u00B7 ') + (names.length>3 ? ` +${names.length-3}` : '');
+}
+function renderJournal(){
+  const f = ui.journal;
+  let list = [...state.journal].sort((a,b)=> b.date.localeCompare(a.date) || b.n-a.n);
+  if(f.from) list = list.filter(e=>e.date>=f.from);
+  if(f.to)   list = list.filter(e=>e.date<=f.to);
+  if(f.acc)  list = list.filter(e=>e.lines.some(l=>l.acc===f.acc));
+  if(f.q){ const q=f.q.toLowerCase();
+    list = list.filter(e=> (e.memo||'').toLowerCase().includes(q) || (e.ref||'').toLowerCase().includes(q)
+      || e.lines.some(l=>(l.memo||'').toLowerCase().includes(q))); }
+
+  return `<div class="viewwrap">
+    ${vhead('GENERAL JOURNAL','Journal',
+      `${state.journal.length} entries \u00B7 every posting balanced, debits equal credits`,
+      `<button class="btn btn-primary" data-action="new-entry"><i data-lucide="plus"></i>New entry</button>`)}
+    <div class="filterbar">
+      <div class="search"><i data-lucide="search"></i><input class="inp" id="jsearch" placeholder="Search memo or reference\u2026" value="${esc(f.q)}"></div>
+      <select class="inp" id="jacc"><option value="">All accounts</option>${state.accounts.slice().sort((a,b)=>a.code.localeCompare(b.code,undefined,{numeric:true})).map(a=>`<option value="${a.id}" ${f.acc===a.id?'selected':''}>${a.code} \u00B7 ${esc(a.name)}</option>`).join('')}</select>
+      <input class="inp" type="date" id="jfrom" value="${f.from}">
+      <span class="sep">\u2192</span>
+      <input class="inp" type="date" id="jto" value="${f.to}">
+      ${f.q||f.acc||f.from||f.to ? `<button class="btn btn-ghost" data-action="jclear"><i data-lucide="x"></i>Clear</button>`:''}
+    </div>
+    <div class="tblwrap scrollx"><table class="tbl">
+      <thead><tr><th style="width:86px">Date</th><th style="width:100px">Ref</th><th>Particulars</th><th class="th-r" style="width:120px">Debit</th><th class="th-r" style="width:120px">Credit</th><th style="width:70px"></th></tr></thead>
+      <tbody>
+      ${list.length===0 ? `<tr><td colspan="6"><div class="empty"><i data-lucide="search"></i>No entries match these filters.</div></td></tr>` : ''}
+      ${list.map(e=>{
+        const dr = r2(e.lines.reduce((s,l)=>s+l.dr,0)), cr = r2(e.lines.reduce((s,l)=>s+l.cr,0));
+        return `<tr class="jmain ${ui.open[e.id]?'expanded':''}" data-action="toggle-entry" data-id="${e.id}">
+          <td class="mono" style="font-size:12px;white-space:nowrap">${fmtDate(e.date)}</td>
+          <td><span class="refchip">${esc(e.ref||'\u2014')}</span></td>
+          <td class="cell-memo"><b>${esc(e.memo||'(untitled entry)')}</b><span class="sub">${esc(entrySummary(e))}</span></td>
+          <td class="num">${fmt(dr)}</td><td class="num">${fmt(cr)}</td>
+          <td class="actions">
+            ${!e.linked ? `<button class="icon-btn" title="Delete entry" data-action="del-entry" data-id="${e.id}"><i data-lucide="trash-2"></i></button>`:''}
+            <span class="chev"><i data-lucide="chevron-down"></i></span>
+          </td></tr>
+        <tr class="jlines" id="je-${e.id}" ${ui.open[e.id]?'':'hidden'}><td colspan="6"><div class="jlines-in">
+          ${e.lines.map(l=>{ const a=accById(l.acc); return `<div class="jline">
+            <span class="acc"><b>${a.code} \u00B7 ${esc(a.name)}</b>${l.memo?` <span class="lmemo">\u2014 ${esc(l.memo)}</span>`:''}</span>
+            <span class="num">${l.dr?fmt(l.dr):''}</span><span class="num">${l.cr?fmt(l.cr):''}</span></div>`; }).join('')}
+        </div></td></tr>`; }).join('')}
+      </tbody></table></div>
+  </div>`;
+}
+
+/* ---------- invoices & bills ---------- */
+function arCollectedThisMonth(){
+  const mr = monthRange(0), arId = AR().id; let s = 0;
+  state.journal.forEach(e=>{ if(e.date>=mr.from && e.date<=mr.to) e.lines.forEach(l=>{ if(l.acc===arId) s+=l.cr; }); });
+  return r2(s);
+}
+function renderInvoices(){
+  const t = todayISO();
+  const list = state.invoices.slice().sort((a,b)=> b.date.localeCompare(a.date) || b.no.localeCompare(a.no));
+  const openInv = list.filter(iv=>invStatus(iv)!=='paid');
+  const out = openInv.reduce((s,iv)=>s+iv.total-iv.paid,0);
+  const od = openInv.filter(iv=>invStatus(iv)==='overdue');
+  const odSum = od.reduce((s,iv)=>s+iv.total-iv.paid,0);
+  const customers = [...new Set(state.invoices.map(i=>i.customer))];
+  return `<div class="viewwrap">
+    ${vhead('ACCOUNTS RECEIVABLE','Invoices',
+      `${fmt(out)} outstanding across ${openInv.length} open invoices \u00B7 ${od.length} overdue`,
+      `<button class="btn btn-primary" data-action="new-invoice"><i data-lucide="plus"></i>New invoice</button>`)}
+    <datalist id="custlist">${customers.map(c=>`<option value="${esc(c)}">`).join('')}</datalist>
+    <div class="statline">
+      <div class="st"><span class="lbl">Outstanding</span><div class="v">${fmt(out)}</div><div class="s">${openInv.length} invoices open</div></div>
+      <div class="st ${od.length?'warn':''}"><span class="lbl">Overdue</span><div class="v">${fmt(odSum)}</div><div class="s">${od.length} past due date</div></div>
+      <div class="st"><span class="lbl">Collected this month</span><div class="v">${fmt(arCollectedThisMonth())}</div><div class="s">credits to receivables</div></div>
+    </div>
+    <div class="tblwrap scrollx"><table class="tbl">
+      <thead><tr><th>No</th><th>Customer</th><th>Issued</th><th>Due</th><th>Status</th><th class="th-r">Total</th><th class="th-r">Balance</th><th style="width:76px"></th></tr></thead>
+      <tbody>${list.map(iv=>{ const st=invStatus(iv); return `<tr>
+        <td class="mono" style="font-size:12px">${iv.no}</td><td><b>${esc(iv.customer)}</b></td>
+        <td class="mono" style="font-size:12px;white-space:nowrap">${fmtDate(iv.date)}</td>
+        <td class="mono" style="font-size:12px;white-space:nowrap">${fmtDate(iv.due)}</td>
+        <td>${chip(st)}</td><td class="num">${fmt(iv.total)}</td>
+        <td class="num">${st==='paid'?'<span style="color:var(--ink-3)">\u2014</span>':fmt(iv.total-iv.paid)}</td>
+        <td class="actions">
+          <button class="icon-btn" title="View invoice" data-action="view-invoice" data-id="${iv.id}"><i data-lucide="eye"></i></button>
+          ${st!=='paid'?`<button class="icon-btn" title="Record payment" data-action="pay-invoice" data-id="${iv.id}"><i data-lucide="banknote"></i></button>`:''}
+        </td></tr>`; }).join('')}
+      </tbody></table></div>
+  </div>`;
+}
+function renderBills(){
+  const t = todayISO();
+  const list = state.bills.slice().sort((a,b)=> b.date.localeCompare(a.date) || b.no.localeCompare(a.no));
+  const openB = list.filter(b=>billStatus(b)!=='paid');
+  const due = openB.reduce((s,b)=>s+b.total-b.paid,0);
+  const od = openB.filter(b=>billStatus(b)==='overdue');
+  return `<div class="viewwrap">
+    ${vhead('ACCOUNTS PAYABLE','Bills',
+      `${fmt(due)} owed to vendors \u00B7 ${od.length} bill${od.length===1?'':'s'} overdue`,
+      `<button class="btn btn-primary" data-action="new-bill"><i data-lucide="plus"></i>New bill</button>`)}
+    <datalist id="vendlist">${[...new Set(state.bills.map(b=>b.vendor))].map(v=>`<option value="${esc(v)}">`).join('')}</datalist>
+    <div class="statline">
+      <div class="st"><span class="lbl">Payables outstanding</span><div class="v">${fmt(due)}</div><div class="s">${openB.length} bills open</div></div>
+      <div class="st ${od.length?'warn':''}"><span class="lbl">Overdue</span><div class="v">${od.length}</div><div class="s">bills past due date</div></div>
+      <div class="st"><span class="lbl">Bills on file</span><div class="v">${list.length}</div><div class="s">all time</div></div>
+    </div>
+    <div class="tblwrap scrollx"><table class="tbl">
+      <thead><tr><th>No</th><th>Vendor</th><th>Date</th><th>Due</th><th>Status</th><th class="th-r">Total</th><th class="th-r">Balance</th><th style="width:76px"></th></tr></thead>
+      <tbody>${list.map(b=>{ const st=billStatus(b); return `<tr>
+        <td class="mono" style="font-size:12px">${b.no}</td><td><b>${esc(b.vendor)}</b></td>
+        <td class="mono" style="font-size:12px;white-space:nowrap">${fmtDate(b.date)}</td>
+        <td class="mono" style="font-size:12px;white-space:nowrap">${fmtDate(b.due)}</td>
+        <td>${chip(st)}</td><td class="num">${fmt(b.total)}</td>
+        <td class="num">${st==='paid'?'<span style="color:var(--ink-3)">\u2014</span>':fmt(b.total-b.paid)}</td>
+        <td class="actions">
+          ${st!=='paid'?`<button class="icon-btn" title="Pay bill" data-action="pay-bill" data-id="${b.id}"><i data-lucide="banknote"></i></button>
+          <button class="icon-btn" title="Void bill" data-action="del-bill" data-id="${b.id}"><i data-lucide="trash-2"></i></button>`:''}
+        </td></tr>`; }).join('')}
+      </tbody></table></div>
+  </div>`;
+}
+
+/* ---------- accounts ---------- */
+function ledgerRows(accId, from='', to=''){
+  const a = accById(accId);
+  const opening = from ? nat(accId,'',addDays(from,-1)) : 0;
+  let run = opening; const rows = [];
+  const es = state.journal
+    .filter(e=>(!from||e.date>=from)&&(!to||e.date<=to)&&e.lines.some(l=>l.acc===accId))
+    .sort((x,y)=> x.date===y.date ? x.n-y.n : (x.date<y.date?-1:1));
+  es.forEach(e=>e.lines.forEach(l=>{
+    if(l.acc!==accId) return;
+    run = r2(run + (a.normalDebit ? l.dr-l.cr : l.cr-l.dr));
+    rows.push({e,l,bal:run});
+  }));
+  return {a, opening, rows, closing: run};
+}
+function renderAccounts(){
+  const sections = ['asset','liability','equity','revenue','expense'].map(t=>{
+    const accs = typeAccounts(t);
+    const total = accs.reduce((s,a)=>s+nat(a.id),0);
+    return `<div class="acc-section"><div class="acc-head"><h3>${TYPE_LABEL[t]}</h3><span class="num">${fmt(total)}</span></div>
+      <div class="tblwrap" style="border-radius:0 0 10px 10px;border-top:none"><table class="tbl"><tbody>
+      ${accs.map(a=>`<tr class="accrow" data-action="open-account" data-id="${a.id}">
+        <td style="width:80px"><span class="code">${a.code}</span></td>
+        <td><b>${esc(a.name)}</b>${a.cash?' <span class="lmemo" style="color:var(--ink-3);font-size:11px">\u00B7 cash</span':''}${a.group==='cogs'?' <span style="color:var(--ink-3);font-size:11px">\u00B7 direct cost</span':''}</td>
+        <td class="num">${fmt(nat(a.id))}</td></tr>`).join('')}
+      </tbody></table></div></div>`;
+  }).join('');
+  return `<div class="viewwrap">
+    ${vhead('CHART OF ACCOUNTS','Accounts',
+      'The spine of the books \u2014 click any account to open its ledger',
+      `<button class="btn btn-primary" data-action="new-account"><i data-lucide="plus"></i>New account</button>`)}
+    ${sections}
+  </div>`;
+}
+
+/* ---------- reports ---------- */
+function stmtHead(title, sub){
+  return `<div class="stmt-head"><div class="stmt-co">${esc(state.company.name)}</div>
+    <h2 class="stmt-title">${title}</h2><div class="stmt-sub">${sub}</div></div>`;
+}
+function srow(name, val, cls='', pct=null){
+  return `<div class="srow ${cls}"><span class="n">${name}</span>
+    <span><span class="num" style="text-align:right">${fmt(val)}</span>${pct!==null?`<span class="pct">${pct}</span>`:''}</span></div>`;
+}
+function tbHTML(to){
+  const rows = state.accounts.slice().sort((a,b)=>a.code.localeCompare(b.code,undefined,{numeric:true}))
+    .map(a=>{ const raw = acctRaw(a.id,'',to); return {a, dr: raw>0.004?raw:0, cr: raw<-0.004?-raw:0}; })
+    .filter(r=>r.dr||r.cr);
+  const td = r2(rows.reduce((s,r)=>s+r.dr,0)), tc = r2(rows.reduce((s,r)=>s+r.cr,0));
+  const bal = Math.abs(td-tc) < 0.02;
+  return `<div class="stmt print-area">${stmtHead('Trial Balance','As of '+fmtDate(to))}
+    <table class="tbl"><thead><tr><th>Account</th><th class="th-r" style="width:160px">Debit</th><th class="th-r" style="width:160px">Credit</th></tr></thead>
+    <tbody>${rows.map(r=>`<tr><td><span class="code">${r.a.code}</span>${esc(r.a.name)}</td>
+      <td class="num">${r.dr?fmt(r.dr):''}</td><td class="num">${r.cr?fmt(r.cr):''}</td></tr>`).join('')}</tbody>
+    <tfoot><tr><td>Totals</td><td class="num">${fmt(td)}</td><td class="num">${fmt(tc)}</td></tr></tfoot></table>
+    <div class="stamp ${bal?'ok':'bad'}">${bal?'In balance':'Out of balance'}</div></div>`;
+}
+function plHTML(from,to){
+  const rowsOf = t => typeAccounts(t).map(a=>({a, v:nat(a.id,from,to)})).filter(r=>Math.abs(r.v)>0.004);
+  const rev = rowsOf('revenue');
+  const cogs = typeAccounts('expense').filter(a=>a.group==='cogs').map(a=>({a,v:nat(a.id,from,to)})).filter(r=>Math.abs(r.v)>0.004);
+  const exp = typeAccounts('expense').filter(a=>a.group!=='cogs').map(a=>({a,v:nat(a.id,from,to)})).filter(r=>Math.abs(r.v)>0.004);
+  const tR=r2(rev.reduce((s,r)=>s+r.v,0)), tC=r2(cogs.reduce((s,r)=>s+r.v,0)), tE=r2(exp.reduce((s,r)=>s+r.v,0));
+  const gross=r2(tR-tC), net=r2(gross-tE);
+  const pc = v => tR ? (v/tR*100).toFixed(1)+'%' : '\u2014';
+  const list = (arr,ind=true) => arr.map(r=>srow(`<small>${r.a.code}</small>${esc(r.a.name)}`, r.v, ind?'ind':'', pc(r.v))).join('');
+  return `<div class="stmt print-area">${stmtHead('Income Statement',fmtDate(from)+' \u2014 '+fmtDate(to))}
+    <div class="sec-t">Revenue</div>${list(rev)}
+    ${srow('Total revenue', tR, 'sub', pc(tR))}
+    <div class="sec-t" style="margin-top:22px">Cost of goods sold</div>${list(cogs)}
+    ${srow('Gross profit', gross, 'sub', pc(gross))}
+    <div class="sec-t" style="margin-top:22px">Operating expenses</div>${list(exp)}
+    ${srow('Total operating expenses', tE, 'sub', pc(tE))}
+    <div style="height:10px"></div>
+    ${srow(`<strong>Net ${net>=0?'profit':'loss'}</strong>`, net, 'total', pc(net))}
+    <div class="stamp ${net>=0?'ok':'bad'}">${net>=0?'Profit':'Loss'}</div></div>`;
+}
+function bsHTML(to){
+  const rowsOf = t => typeAccounts(t).map(a=>({a, v:nat(a.id,'',to)})).filter(r=>Math.abs(r.v)>0.004);
+  const assets=rowsOf('asset'), liabs=rowsOf('liability'), eqs=rowsOf('equity');
+  const tA=r2(assets.reduce((s,r)=>s+r.v,0)), tL=r2(liabs.reduce((s,r)=>s+r.v,0)), tE=r2(eqs.reduce((s,r)=>s+r.v,0));
+  const net = r2(typeNatSum('revenue','',to) - typeNatSum('expense','',to));
+  const tLE = r2(tL+tE+net);
+  const bal = Math.abs(tA-tLE) < 0.02;
+  const list = arr => arr.map(r=>srow(`<small>${r.a.code}</small>${esc(r.a.name)}`, r.v, 'ind')).join('');
+  return `<div class="stmt print-area">${stmtHead('Balance Sheet','As of '+fmtDate(to))}
+    <div class="stmt-cols">
+      <div><div class="sec-t">Assets</div>${list(assets)}${srow('Total assets', tA, 'total')}</div>
+      <div><div class="sec-t">Liabilities</div>${list(liabs)}${srow('Total liabilities', tL, 'sub')}
+        <div class="sec-t" style="margin-top:24px">Equity</div>${list(eqs)}
+        ${srow('Net earnings to date', net, 'ind')}
+        ${srow('Total liabilities & equity', tLE, 'total')}</div>
+    </div>
+    <div class="stamp ${bal?'ok':'bad'}">${bal?'Balanced':'Out of balance'}</div></div>`;
+}
+function glHTML(accId, from, to){
+  const {a, opening, rows, closing} = ledgerRows(accId, from, to);
+  return `<div class="stmt print-area">${stmtHead('General Ledger \u2014 '+esc(a.name), (from?fmtDate(from)+' \u2014 ':'')+fmtDate(to))}
+    <table class="tbl"><thead><tr><th style="width:86px">Date</th><th style="width:96px">Ref</th><th>Particulars</th>
+      <th class="th-r" style="width:110px">Debit</th><th class="th-r" style="width:110px">Credit</th><th class="th-r" style="width:130px">Balance</th></tr></thead>
+    <tbody>
+      ${from?`<tr><td class="mono" style="font-size:12px">${fmtDate(addDays(from,-1))}</td><td></td><td><i style="color:var(--ink-3)">Opening balance</i></td><td></td><td></td><td class="num">${fmt(opening)}</td></tr>`:''}
+      ${rows.map(r=>`<tr><td class="mono" style="font-size:12px;white-space:nowrap">${fmtDate(r.e.date)}</td>
+        <td><span class="refchip">${esc(r.e.ref||'\u2014')}</span></td>
+        <td>${esc(r.e.memo)}${r.l.memo?` <span style="color:var(--ink-3)">\u2014 ${esc(r.l.memo)}</span>`:''}</td>
+        <td class="num">${r.l.dr?fmt(r.l.dr):''}</td><td class="num">${r.l.cr?fmt(r.l.cr):''}</td>
+        <td class="num ${r.bal<-0.004?'neg':''}">${fmt(r.bal)}</td></tr>`).join('')}
+    </tbody>
+    <tfoot><tr><td colspan="5">Closing balance \u2014 ${esc(a.name)}</td><td class="num">${fmt(closing)}</td></tr></tfoot></table></div>`;
+}
+function renderReports(){
+  const r = ui.rep, tabs = [['tb','Trial balance'],['pl','Income statement'],['bs','Balance sheet'],['gl','General ledger']];
+  const ctl = `
+    ${ui.report==='pl'||ui.report==='gl' ? `<div><label>From</label><input class="inp" type="date" id="repFrom" value="${r.from}"></div>`:''}
+    <div><label>${ui.report==='tb'||ui.report==='bs' ? 'As of' : 'To'}</label><input class="inp" type="date" id="repTo" value="${r.to}"></div>
+    <button class="btn btn-ghost" data-action="print-report"><i data-lucide="printer"></i>Print</button>`;
+  let body='';
+  if(ui.report==='tb') body = tbHTML(r.to);
+  if(ui.report==='pl') body = plHTML(r.from||fyStartISO(), r.to);
+  if(ui.report==='bs') body = bsHTML(r.to);
+  if(ui.report==='gl'){
+    if(!ui.repAcc) ui.repAcc = cashAccounts()[0].id;
+    body = `<div class="rep-ctl"><div style="flex:1;max-width:340px"><label>Account</label>
+      <select class="inp" id="repAcc">${accOptions()}</select></div></div>` + glHTML(ui.repAcc, r.from||fyStartISO(), r.to);
+  }
+  return `<div class="viewwrap">
+    ${vhead('FINANCIAL STATEMENTS','Reports','Prepared on an accrual basis, straight from the general journal')}
+    <div class="rtabs">${tabs.map(t=>`<button class="rtab ${ui.report===t[0]?'active':''}" data-action="report-tab" data-report="${t[0]}">${t[1]}</button>`).join('')}</div>
+    <div class="rep-ctl">${ctl}</div>
+    ${body}
+  </div>`;
+}
+
+/* ---------- settings ---------- */
+function renderSettings(){
+  const c = state.company;
+  return `<div class="viewwrap">
+    ${vhead('CONFIGURATION','Settings','Company profile, currency and data management')}
+    <div class="set-grid">
+      <form class="card set-card" id="setForm">
+        <h3>Company profile</h3><p class="sub">Appears on statements and printed invoices.</p>
+        <div class="field" style="margin-bottom:14px"><label>Company name</label><input class="inp" id="setName" value="${esc(c.name)}"></div>
+        <div class="field" style="margin-bottom:14px"><label>Address</label><input class="inp" id="setAddr" value="${esc(c.address)}"></div>
+        <div class="frow" style="margin-bottom:18px">
+          <div class="field" style="flex:0 0 110px"><label>Currency</label><input class="inp" id="setSym" value="${esc(c.symbol)}" maxlength="4"></div>
+          <div class="field"><label>Number format</label><select class="inp" id="setLoc">
+            <option value="en-IN" ${c.locale==='en-IN'?'selected':''}>Indian (1,23,456.00)</option>
+            <option value="en-US" ${c.locale==='en-US'?'selected':''}>International (123,456.00)</option></select></div>
+          <div class="field"><label>Fiscal year starts</label><select class="inp" id="setFy">
+            ${MON.map((m,i)=>`<option value="${i+1}" ${c.fyStart===i+1?'selected':''}>${m}</option>`).join('')}</select></div>
+        </div>
+        <button class="btn btn-primary" type="submit"><i data-lucide="check"></i>Save changes</button>
+      </form>
+      <div>
+        <div class="card set-card" style="margin-bottom:18px">
+          <h3>The books</h3><p class="sub">Everything lives in your browser \u2014 nothing leaves this machine.</p>
+          <div class="kv"><span>Journal entries</span><b>${state.journal.length}</b></div>
+          <div class="kv"><span>Invoices on file</span><b>${state.invoices.length}</b></div>
+          <div class="kv"><span>Vendor bills</span><b>${state.bills.length}</b></div>
+          <div class="kv"><span>Accounts</span><b>${state.accounts.length}</b></div>
+          <div class="kv" style="border-bottom:none"><span>Storage</span><b>localStorage</b></div>
+          <div style="margin-top:16px"><button class="btn btn-ghost" data-action="export-data"><i data-lucide="download"></i>Export books (JSON)</button></div>
+        </div>
+        <div class="card set-card danger-zone">
+          <h3>Start over</h3><p class="sub">Wipes these books and regenerates the demo company with a fresh seven months of history.</p>
+          <button class="btn btn-outline-danger" data-action="reset-data"><i data-lucide="rotate-ccw"></i>Reset demo data</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+const VIEWS = {dashboard:renderDashboard, journal:renderJournal, invoices:renderInvoices, bills:renderBills, accounts:renderAccounts, reports:renderReports, settings:renderSettings};
+
+/* ---------- render & per-view wiring ---------- */
+function animateNum(el){
+  const target = +el.dataset.vals || 0, sym = state.company.symbol, loc = state.company.locale;
+  const dur = 650, t0 = performance.now();
+  const step = t => {
+    const p = Math.min(1,(t-t0)/dur), e = 1-Math.pow(1-p,3);
+    el.textContent = sym + (target*e).toLocaleString(loc,{maximumFractionDigits:0});
+    if(p<1) requestAnimationFrame(step);
+    else el.textContent = fmt(target);
+  };
+  requestAnimationFrame(step);
+}
+function render(){
+  renderSidebar();
+  $('#view').innerHTML = VIEWS[ui.view]();
+  if(ui.view==='dashboard') $$('.anim-num').forEach(animateNum);
+  if(ui.view==='journal'){
+    const el = $('#jsearch');
+    el.addEventListener('input', ()=>{ ui.journal.q = el.value; render(); el.focus(); el.setSelectionRange(el.value.length, el.value.length); });
+    $('#jacc').addEventListener('change', e=>{ ui.journal.acc = e.target.value; render(); });
+    $('#jfrom').addEventListener('change', e=>{ ui.journal.from = e.target.value; render(); });
+    $('#jto').addEventListener('change', e=>{ ui.journal.to = e.target.value; render(); });
+  }
+  if(ui.view==='reports'){
+    ['repFrom','repTo'].forEach(id=>{ const el = document.getElementById(id);
+      if(el) el.addEventListener('change', ()=>{ ui.rep[id==='repFrom'?'from':'to'] = el.value || todayISO(); render(); }); });
+    const sel = $('#repAcc'); if(sel){ sel.value = ui.repAcc; sel.addEventListener('change', ()=>{ ui.repAcc = sel.value; render(); }); }
+  }
+  if(ui.view==='settings'){
+    $('#setForm').addEventListener('submit', e=>{
+      e.preventDefault();
+      state.company.name = $('#setName').value.trim() || state.company.name;
+      state.company.address = $('#setAddr').value.trim();
+      state.company.symbol = $('#setSym').value.trim() || '\u20B9';
+      state.company.locale = $('#setLoc').value;
+      state.company.fyStart = +$('#setFy').value;
+      save(); toast('Settings saved'); render();
+    });
+  }
+  refreshIcons();
+}
+
+/* ---------- modals: journal entry (with the balance beam) ---------- */
+function beamSVG(){
+  return `<svg id="beamSvg" viewBox="0 0 320 118" aria-hidden="true">
+    <line x1="112" y1="112" x2="208" y2="112" stroke="var(--line-strong)" stroke-width="3" stroke-linecap="round"/>
+    <polygon points="160,66 147,110 173,110" fill="var(--card-2)" stroke="var(--ink)" stroke-width="2" stroke-linejoin="round"/>
+    <g id="beamG">
+      <rect x="40" y="61" width="240" height="6" rx="3" fill="var(--ink)"/>
+      <circle cx="160" cy="64" r="4.5" fill="var(--paper)" stroke="var(--ink)" stroke-width="2"/>
+      <g class="pan" id="panL"><line x1="0" y1="0" x2="0" y2="15" stroke="var(--ink)" stroke-width="1.5"/><rect x="-30" y="15" width="60" height="8" rx="4" fill="var(--green)"/></g>
+      <g class="pan" id="panR"><line x1="0" y1="0" x2="0" y2="15" stroke="var(--ink)" stroke-width="1.5"/><rect x="-30" y="15" width="60" height="8" rx="4" fill="var(--red)"/></g>
+    </g>
+    <text class="beam-bal" x="160" y="46" text-anchor="middle">\u00B7 in balance \u00B7</text></svg>`;
+}
+function openEntryModal(){
+  const w = openModal(`
+    <div class="mhead"><h3>New journal entry</h3><button class="icon-btn" data-action="close-modal"><i data-lucide="x"></i></button></div>
+    <form id="jeForm">
+      <div class="mbody">
+        <div class="frow">
+          <div class="field" style="flex:0 0 150px"><label>Date</label><input class="inp" type="date" id="jeDate" value="${todayISO()}"></div>
+          <div class="field" style="flex:0 0 130px"><label>Reference</label><input class="inp" id="jeRef" placeholder="e.g. ADJ-01"></div>
+          <div class="field"><label>Memo</label><input class="inp" id="jeMemo" placeholder="What is this entry for?"></div>
+        </div>
+        <div class="beam-panel" id="beamPanel">
+          ${beamSVG()}
+          <div class="beam-read">
+            <div class="br"><span class="br-k">Debits</span><span class="br-v" id="bDr">${fmt(0)}</span></div>
+            <div class="br-diff" id="bDiff">&nbsp;</div>
+            <div class="br" style="text-align:right;align-items:flex-end"><span class="br-k">Credits</span><span class="br-v" id="bCr">${fmt(0)}</span></div>
+          </div>
+        </div>
+        <div class="je-grid je-h"><span>Account</span><span class="je-memo-c">Line memo</span><span style="text-align:right">Debit</span><span style="text-align:right">Credit</span><span></span></div>
+        <div id="jeRows"></div>
+        <button type="button" class="btn btn-ghost" id="jeAdd" style="margin-top:4px"><i data-lucide="plus"></i>Add line</button>
+      </div>
+      <div class="mbody" style="padding-top:0">
+        <div class="mfoot"><span class="hint">The post button unlocks when the beam rests level.</span>
+          <button type="button" class="btn btn-ghost" data-action="close-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="jePost" disabled><i data-lucide="check"></i>Post entry</button>
+        </div>
+      </div>
+    </form>`, {w:790});
+  const rows = $('#jeRows');
+  function recalc(){
+    let dr=0, cr=0, ok=true;
+    $$('#jeRows .je-row').forEach(rw=>{
+      const d = num(rw.querySelector('.je-dr').value), c = num(rw.querySelector('.je-cr').value);
+      const hasAcc = !!rw.querySelector('.je-acc').value;
+      const lineOk = !(d>0 && c>0) && ((d>0||c>0) ? hasAcc : true);
+      rw.classList.toggle('err', !lineOk); if(!lineOk) ok = false;
+      dr += d; cr += c;
+    });
+    dr = r2(dr); cr = r2(cr);
+    const bal = dr>0 && Math.abs(dr-cr)<0.005 && ok;
+    $('#beamPanel').classList.toggle('bal', bal);
+    $('#bDr').textContent = fmt(dr); $('#bCr').textContent = fmt(cr);
+    $('#bDiff').textContent = bal ? 'in balance' : ((dr||cr) ? 'off by '+fmt(Math.abs(dr-cr)) : '');
+    const a = Math.max(-12, Math.min(12, (cr-dr)/110));
+    $('#beamG').style.transform = `rotate(${a}deg)`;
+    $('#panL').style.transform = `translate(46px, 68px) rotate(${-a}deg)`;
+    $('#panR').style.transform = `translate(274px, 68px) rotate(${-a}deg)`;
+    $('#jePost').disabled = !bal;
+  }
+  function addLine(){
+    const rw = document.createElement('div');
+    rw.className = 'je-grid je-row';
+    rw.innerHTML = `<select class="inp je-acc"><option value=""></option>${accOptions()}</select>
+      <input class="inp je-memo je-memo-c" placeholder="Optional">
+      <input class="inp je-dr" type="number" min="0" step="any" placeholder="0.00">
+      <input class="inp je-cr" type="number" min="0" step="any" placeholder="0.00">
+      <button type="button" class="icon-btn je-rm" title="Remove line"><i data-lucide="x"></i></button>`;
+    rw.querySelector('.je-dr').addEventListener('input', e=>{ if(num(e.target.value)>0) rw.querySelector('.je-cr').value=''; recalc(); });
+    rw.querySelector('.je-cr').addEventListener('input', e=>{ if(num(e.target.value)>0) rw.querySelector('.je-dr').value=''; recalc(); });
+    rw.querySelector('.je-rm').onclick = ()=>{ rw.remove(); recalc(); };
+    rows.appendChild(rw); refreshIcons(); recalc();
+  }
+  $('#jeAdd').onclick = addLine;
+  addLine(); addLine();
+  $('#jeForm').onsubmit = ev => {
+    ev.preventDefault();
+    const lines = [];
+    let bad = false;
+    $$('#jeRows .je-row').forEach(rw=>{
+      const acc = rw.querySelector('.je-acc').value;
+      const d = num(rw.querySelector('.je-dr').value), c = num(rw.querySelector('.je-cr').value);
+      if(d>0 && c>0) bad = true;
+      if((d>0||c>0) && acc) lines.push({acc, dr:d, cr:c, memo:rw.querySelector('.je-memo').value.trim()});
+    });
+    const dr = r2(lines.reduce((s,l)=>s+l.dr,0)), cr = r2(lines.reduce((s,l)=>s+l.cr,0));
+    if(bad || !lines.length || Math.abs(dr-cr)>0.005 || dr<=0){ toast('The entry is not ready \u2014 check the highlighted lines.','warn'); return; }
+    postEntry({date:$('#jeDate').value||todayISO(), ref:$('#jeRef').value.trim(), memo:$('#jeMemo').value.trim(), lines});
+    save(); closeModal(w); render();
+    toast(`Entry posted \u2014 ${fmt(dr)} on each side of the ledger`);
+  };
+}
+
+/* ---------- modals: invoices / bills ---------- */
+function itemModal({title, partyLabel, partyListId, accType, withTax, onSubmit, hint}){
+  const w = openModal(`
+    <div class="mhead"><h3>${title}</h3><button class="icon-btn" data-action="close-modal"><i data-lucide="x"></i></button></div>
+    <form id="docForm">
+      <div class="mbody">
+        <div class="frow" style="margin-bottom:14px">
+          <div class="field"><label>${partyLabel}</label><input class="inp" id="docParty" list="${partyListId}" placeholder="Name" autocomplete="off"></div>
+          <div class="field" style="flex:0 0 140px"><label>Date</label><input class="inp" type="date" id="docDate" value="${todayISO()}"></div>
+          <div class="field" style="flex:0 0 140px"><label>Due date</label><input class="inp" type="date" id="docDue" value="${addDays(todayISO(),30)}"></div>
+        </div>
+        <div class="item-grid item-h"><span>Description</span><span style="text-align:right">Qty</span><span style="text-align:right">Rate</span><span class="item-acc-c">Account</span><span style="text-align:right">Amount</span><span></span></div>
+        <div id="itemRows"></div>
+        <button type="button" class="btn btn-ghost" id="itemAdd"><i data-lucide="plus"></i>Add line</button>
+        <div class="totbox">
+          <div class="srow"><span class="n">Subtotal</span><span class="num" id="tSub">${fmt(0)}</span></div>
+          ${withTax?`<div class="srow"><span class="n">Tax
+            <input class="inp" id="tTaxPct" type="number" min="0" step="any" value="0" style="width:64px;padding:3px 7px;font-size:12px;margin-left:8px">%</span>
+            <span class="num" id="tTax">${fmt(0)}</span></div>`:''}
+          <div class="srow total"><span class="n">Total</span><span class="num" id="tTot">${fmt(0)}</span></div>
+        </div>
+      </div>
+      <div class="mbody" style="padding-top:0">
+        <div class="mfoot"><span class="hint">${hint}</span>
+          <button type="button" class="btn btn-ghost" data-action="close-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="docCreate"><i data-lucide="check"></i>${title==='New invoice'?'Create invoice':'Record bill'}</button>
+        </div>
+      </div>
+    </form>`, {w:840});
+  const rows = $('#itemRows');
+  function addItem(){
+    const rw = document.createElement('div');
+    rw.className = 'item-grid item-row';
+    rw.innerHTML = `<input class="inp i-desc" placeholder="Description">
+      <input class="inp i-qty" type="number" min="0" step="any" placeholder="1" style="text-align:right">
+      <input class="inp i-rate" type="number" min="0" step="any" placeholder="0.00" style="text-align:right;font-family:'IBM Plex Mono'">
+      <select class="inp i-acc item-acc-c">${typeAccOptions(accType)}</select>
+      <span class="item-amt">${fmt(0)}</span>
+      <button type="button" class="icon-btn i-rm"><i data-lucide="x"></i></button>`;
+    rw.querySelector('.i-rm').onclick = ()=>{ rw.remove(); recalc(); };
+    rows.appendChild(rw); refreshIcons(); recalc();
+  }
+  function recalc(){
+    let sub = 0;
+    $$('#itemRows .item-row').forEach(rw=>{
+      const amt = r2(num(rw.querySelector('.i-qty').value) * num(rw.querySelector('.i-rate').value));
+      rw.querySelector('.item-amt').textContent = fmt(amt); sub += amt;
+    });
+    sub = r2(sub);
+    const pct = withTax ? Math.max(0, num($('#tTaxPct').value)) : 0;
+    const tax = r2(sub*pct/100);
+    $('#tSub').textContent = fmt(sub);
+    if(withTax) $('#tTax').textContent = fmt(tax);
+    $('#tTot').textContent = fmt(r2(sub+tax));
+    return {sub, tax, pct};
+  }
+  $('#itemAdd').onclick = addItem;
+  addItem();
+  $('#docForm').addEventListener('input', recalc);
+  $('#docForm').onsubmit = ev => { ev.preventDefault(); onSubmit(w, recalc); };
+}
+function openInvoiceModal(){
+  itemModal({
+    title:'New invoice', partyLabel:'Customer', partyListId:'custlist', accType:'revenue', withTax:true,
+    hint:'Posting: Dr Accounts Receivable \u00B7 Cr revenue & tax.',
+    onSubmit:(w, recalc)=>{
+      const party = $('#docParty').value.trim();
+      const items = $$('#itemRows .item-row').map(rw=>({
+        desc: rw.querySelector('.i-desc').value.trim(),
+        qty: num(rw.querySelector('.i-qty').value),
+        price: num(rw.querySelector('.i-rate').value),
+        acc: rw.querySelector('.i-acc').value
+      })).filter(it=>it.qty>0 && it.price>=0 && it.acc);
+      if(!party){ toast('Who is this invoice for?','warn'); return; }
+      if(!items.length){ toast('Add at least one line with a quantity and account.','warn'); return; }
+      const {sub, tax, pct} = recalc();
+      const no = 'INV-'+pad(state.seq.inv++,3);
+      const total = r2(sub+tax);
+      const lines = [{acc:AR().id, dr:total}];
+      items.forEach(it=>lines.push({acc:it.acc, cr:r2(it.qty*it.price), memo:it.desc||''}));
+      if(tax>0) lines.push({acc:TAXACC().id, cr:tax, memo:'Sales tax'});
+      const date = $('#docDate').value||todayISO(), due = $('#docDue').value||addDays(date,30);
+      const eid = postEntry({date, ref:no, memo:'Invoice \u2014 '+party, lines, linked:'inv:iv-'+no});
+      state.invoices.push({id:'iv-'+no, no, customer:party, date, due, items, taxRate:pct, subtotal:sub, total, paid:0, entryId:eid});
+      save(); closeModal(w); render();
+      toast(`Invoice ${no} created \u2014 ${fmt(total)} posted to receivables`);
+    }
+  });
+}
+function openBillModal(){
+  itemModal({
+    title:'New bill', partyLabel:'Vendor', partyListId:'vendlist', accType:'expense', withTax:false,
+    hint:'Posting: Dr expense accounts \u00B7 Cr Accounts Payable.',
+    onSubmit:(w, recalc)=>{
+      const party = $('#docParty').value.trim();
+      const items = $$('#itemRows .item-row').map(rw=>({
+        desc: rw.querySelector('.i-desc').value.trim(),
+        qty: num(rw.querySelector('.i-qty').value),
+        price: num(rw.querySelector('.i-rate').value),
+        acc: rw.querySelector('.i-acc').value
+      })).filter(it=>it.qty>0 && it.price>=0 && it.acc);
+      if(!party){ toast('Which vendor is this bill from?','warn'); return; }
+      if(!items.length){ toast('Add at least one line with a quantity and account.','warn'); return; }
+      const {sub} = recalc();
+      const no = 'BILL-'+pad(state.seq.bill++,3);
+      const lines = items.map(it=>({acc:it.acc, dr:r2(it.qty*it.price), memo:it.desc||''}));
+      lines.push({acc:AP().id, cr:sub});
+      const date = $('#docDate').value||todayISO(), due = $('#docDue').value||addDays(date,30);
+      const eid = postEntry({date, ref:no, memo:'Bill \u2014 '+party, lines, linked:'bill:bl-'+no});
+      state.bills.push({id:'bl-'+no, no, vendor:party, date, due, items, total:sub, paid:0, entryId:eid});
+      save(); closeModal(w); render();
+      toast(`Bill ${no} recorded \u2014 ${fmt(sub)} now payable`);
+    }
+  });
+}
+
+/* ---------- modals: payments, invoice doc, ledger, account ---------- */
+function openPaymentModal(kind, id){
+  const isInv = kind==='invoice';
+  const obj = (isInv?state.invoices:state.bills).find(x=>x.id===id);
+  if(!obj) return;
+  const due = r2(obj.total - obj.paid);
+  const w = openModal(`
+    <div class="mhead"><h3>${isInv?'Record payment':'Pay bill'} \u2014 ${obj.no}</h3><button class="icon-btn" data-action="close-modal"><i data-lucide="x"></i></button></div>
+    <form id="payForm"><div class="mbody">
+      <div class="kv" style="margin-bottom:16px"><span>Balance due \u00B7 ${esc(isInv?obj.customer:obj.vendor)}</span><b>${fmt(due)}</b></div>
+      <div class="frow">
+        <div class="field" style="flex:0 0 140px"><label>Date</label><input class="inp" type="date" id="payDate" value="${todayISO()}"></div>
+        <div class="field"><label>Deposit to / pay from</label><select class="inp" id="payAcc">${cashAccounts().map(a=>`<option value="${a.id}">${a.code} \u00B7 ${esc(a.name)}</option>`).join('')}</select></div>
+        <div class="field" style="flex:0 0 160px"><label>Amount</label><input class="inp" id="payAmt" type="number" min="0" step="any" value="${due}" style="text-align:right;font-family:'IBM Plex Mono'"></div>
+      </div>
+      <div class="mfoot"><button type="button" class="btn btn-ghost" data-action="close-modal">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i data-lucide="banknote"></i>Record ${fmt(due)}</button></div>
+    </div></form>`, {w:560});
+  $('#payForm').onsubmit = ev => {
+    ev.preventDefault();
+    const amt = r2(num($('#payAmt').value));
+    if(amt<=0 || amt>due+0.005){ toast('Amount must be between 0 and the balance due.','warn'); return; }
+    const acc = $('#payAcc').value, date = $('#payDate').value||todayISO();
+    if(isInv){
+      postEntry({date, ref:'RCT-'+obj.no, memo:'Payment received \u2014 '+obj.customer,
+        lines:[{acc, dr:amt},{acc:AR().id, cr:amt}], linked:'pay:'+obj.id});
+      obj.paid = r2(obj.paid+amt);
+    } else {
+      postEntry({date, ref:'PAY-'+obj.no, memo:'Payment \u2014 '+obj.vendor,
+        lines:[{acc:AP().id, dr:amt},{acc, cr:amt}], linked:'pay:'+obj.id});
+      obj.paid = r2(obj.paid+amt);
+    }
+    save(); closeAllModals(); render();
+    toast(`${fmt(amt)} recorded against ${obj.no}`);
+  };
+}
+function openInvoiceView(id){
+  const iv = state.invoices.find(x=>x.id===id); if(!iv) return;
+  const st = invStatus(iv), bal = r2(iv.total-iv.paid);
+  const w = openModal(`
+    <div class="mhead" style="padding-bottom:14px"><h3>Invoice ${iv.no}</h3><button class="icon-btn" data-action="close-modal"><i data-lucide="x"></i></button></div>
+    <div class="mbody scroll" style="padding-top:4px">
+      <div class="inv-doc print-area">
+        <div class="inv-top">
+          <div><div class="inv-co">${esc(state.company.name)}</div><div class="inv-addr">${esc(state.company.address).replace(/\n/g,'<br>')}</div></div>
+          <div class="inv-meta"><h3>Invoice</h3>
+            <div class="mono" style="margin-top:6px">${iv.no}</div>
+            <div class="mono">Issued ${fmtDate(iv.date)} \u00B7 Due ${fmtDate(iv.due)}</div>
+            <div class="stamp ${st==='paid'?'ok':st==='overdue'?'bad':''}" style="color:${st==='open'?'var(--ink-2)':''}">${st}</div>
+          </div>
+        </div>
+        <div class="inv-billto"><span class="lbl">Billed to</span><b>${esc(iv.customer)}</b></div>
+        <table class="tbl"><thead><tr><th>Description</th><th class="th-r" style="width:60px">Qty</th><th class="th-r" style="width:110px">Rate</th><th class="th-r" style="width:120px">Amount</th></tr></thead>
+        <tbody>${iv.items.map(it=>`<tr><td>${esc(it.desc)}</td><td class="num">${it.qty}</td><td class="num">${fmt(it.price)}</td><td class="num">${fmt(it.qty*it.price)}</td></tr>`).join('')}</tbody></table>
+        <div class="inv-tot">
+          <div class="srow"><span class="n">Subtotal</span><span class="num">${fmt(iv.subtotal)}</span></div>
+          ${iv.taxRate>0?`<div class="srow"><span class="n">Tax (${iv.taxRate}%)</span><span class="num">${fmt(iv.total-iv.subtotal)}</span></div>`:''}
+          <div class="srow total"><span class="n">Total</span><span class="num">${fmt(iv.total)}</span></div>
+          ${iv.paid>0?`<div class="srow"><span class="n">Paid</span><span class="num">\u2212 ${fmt(iv.paid)}</span></div>`:''}
+          <div class="srow big ${bal>0?'':''}"><span class="n"><strong>Balance due</strong></span><span class="num"><strong>${fmt(bal)}</strong></span></div>
+        </div>
+        <div class="inv-note">With thanks for your business \u2014 this invoice was posted directly to the ledger of ${esc(state.company.name)}.</div>
+      </div>
+      <div class="mfoot">
+        ${bal>0?`<button class="btn btn-primary" data-action="pay-invoice" data-id="${iv.id}"><i data-lucide="banknote"></i>Record payment</button>`:''}
+        <button class="btn btn-ghost" id="invPrint"><i data-lucide="printer"></i>Print</button>
+        ${iv.paid===0?`<button class="btn btn-outline-danger" id="invVoid"><i data-lucide="trash-2"></i>Void</button>`:''}
+        <button class="btn btn-ghost" data-action="close-modal">Close</button>
+      </div>
+    </div>`, {w:740});
+  w.querySelector('#invPrint').onclick = ()=>window.print();
+  const vb = w.querySelector('#invVoid');
+  if(vb) vb.onclick = ()=>confirmModal({
+    title:'Void invoice '+iv.no+'?',
+    msg:'The journal entry behind this invoice will be removed and it will disappear from receivables. This cannot be undone.',
+    label:'Void invoice', onYes:()=>{
+      state.journal = state.journal.filter(e=>e.id!==iv.entryId);
+      state.invoices = state.invoices.filter(x=>x.id!==iv.id);
+      save(); closeAllModals(); render(); toast('Invoice '+iv.no+' voided \u2014 entry removed');
+    }
+  });
+}
+function openLedgerModal(accId){
+  const {a, rows, closing} = ledgerRows(accId);
+  openModal(`
+    <div class="mhead"><h3>General ledger \u2014 ${esc(a.name)}</h3><button class="icon-btn" data-action="close-modal"><i data-lucide="x"></i></button></div>
+    <div class="mbody scroll" style="padding-top:8px">
+      <table class="tbl"><thead><tr><th style="width:80px">Date</th><th style="width:92px">Ref</th><th>Particulars</th>
+        <th class="th-r" style="width:104px">Debit</th><th class="th-r" style="width:104px">Credit</th><th class="th-r" style="width:124px">Balance</th></tr></thead>
+      <tbody>${rows.map(r=>`<tr><td class="mono" style="font-size:12px;white-space:nowrap">${fmtDate(r.e.date)}</td>
+        <td><span class="refchip">${esc(r.e.ref||'\u2014')}</span></td>
+        <td>${esc(r.e.memo)}${r.l.memo?` <span style="color:var(--ink-3)">\u2014 ${esc(r.l.memo)}</span>`:''}</td>
+        <td class="num">${r.l.dr?fmt(r.l.dr):''}</td><td class="num">${r.l.cr?fmt(r.l.cr):''}</td>
+        <td class="num ${r.bal<-0.004?'neg':''}">${fmt(r.bal)}</td></tr>`).join('')}</tbody>
+      <tfoot><tr><td colspan="5">Closing balance</td><td class="num">${fmt(closing)}</td></tr></tfoot></table>
+    </div>`, {w:820});
+}
+function openAccountModal(){
+  const w = openModal(`
+    <div class="mhead"><h3>New account</h3><button class="icon-btn" data-action="close-modal"><i data-lucide="x"></i></button></div>
+    <form id="accForm"><div class="mbody">
+      <div class="frow" style="margin-bottom:14px">
+        <div class="field" style="flex:0 0 100px"><label>Code</label><input class="inp" id="accCode" placeholder="e.g. 6800"></div>
+        <div class="field"><label>Account name</label><input class="inp" id="accName" placeholder="e.g. Travel & Conveyance"></div>
+      </div>
+      <div class="frow" style="margin-bottom:14px">
+        <div class="field"><label>Type</label><select class="inp" id="accType">
+          ${Object.keys(TYPE_LABEL).map(t=>`<option value="${t}">${TYPE_LABEL[t]}</option>`).join('')}</select></div>
+        <div class="field" id="accGroupW" style="display:none"><label>Expense group</label><select class="inp" id="accGroup">
+          <option value="">Operating</option><option value="cogs">Cost of goods sold</option></select></div>
+        <div class="field"><label>Opening balance</label><input class="inp" id="accOpen" type="number" step="any" value="0" style="text-align:right;font-family:'IBM Plex Mono'"></div>
+      </div>
+      <p style="font-size:12px;color:var(--ink-3)">An opening balance posts against Opening Balance Equity so the books stay trued.</p>
+      <div class="mfoot"><button type="button" class="btn btn-ghost" data-action="close-modal">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i data-lucide="plus"></i>Create account</button></div>
+    </div></form>`, {w:560});
+  $('#accType').addEventListener('change', e=>{ $('#accGroupW').style.display = e.target.value==='expense' ? '' : 'none'; });
+  $('#accForm').onsubmit = ev => {
+    ev.preventDefault();
+    const code = $('#accCode').value.trim(), name = $('#accName').value.trim();
+    if(!/^[0-9]{3,6}$/.test(code)){ toast('The code should be 3\u20136 digits.','warn'); return; }
+    if(!name){ toast('Give the account a name.','warn'); return; }
+    if(state.accounts.some(a=>a.code===code)){ toast('That code is already taken.','warn'); return; }
+    const type = $('#accType').value;
+    const acc = {id:'a'+code+'-'+Math.random().toString(36).slice(2,5), code, name, type,
+      normalDebit:(type==='asset'||type==='expense'), group: type==='expense' ? $('#accGroup').value : ''};
+    state.accounts.push(acc);
+    const open = r2(num($('#accOpen').value));
+    if(Math.abs(open) > 0.004){
+      const lines = acc.normalDebit
+        ? (open>0 ? [{acc:acc.id,dr:open},{acc:OBE().id,cr:open}] : [{acc:OBE().id,dr:-open},{acc:acc.id,cr:-open}])
+        : (open>0 ? [{acc:OBE().id,dr:open},{acc:acc.id,cr:open}] : [{acc:acc.id,dr:-open},{acc:OBE().id,cr:-open}]);
+      postEntry({date:todayISO(), ref:'OPEN-'+code, memo:'Opening balance \u2014 '+name, lines});
+    }
+    save(); closeModal(w); render();
+    toast(`Account ${code} \u00B7 ${name} added to the chart`);
+  };
+}
+
+/* ---------- global event delegation ---------- */
+document.addEventListener('click', e=>{
+  const t = e.target.closest('[data-action]');
+  if(!t) return;
+  if(t.tagName==='A') e.preventDefault();
+  const id = t.dataset.id;
+  switch(t.dataset.action){
+    case 'nav': case 'goto': ui.view = t.dataset.view || t.dataset.to; ui.open = {}; closeAllModals(); render(); break;
+    case 'new-entry': openEntryModal(); break;
+    case 'new-invoice': openInvoiceModal(); break;
+    case 'new-bill': openBillModal(); break;
+    case 'new-account': openAccountModal(); break;
+    case 'toggle-entry': {
+      const tr = document.getElementById('je-'+id);
+      if(tr){ tr.hidden = !tr.hidden; t.closest('tr').classList.toggle('expanded', !tr.hidden); }
+      break;
+    }
+    case 'del-entry': confirmModal({
+      title:'Delete this journal entry?', msg:'Its debits and credits will be removed from every ledger and report. This cannot be undone.',
+      label:'Delete entry', onYes:()=>{ state.journal = state.journal.filter(x=>x.id!==id); save(); render(); toast('Entry deleted'); }
+    }); break;
+    case 'view-invoice': openInvoiceView(id); break;
+    case 'pay-invoice': openPaymentModal('invoice', id); break;
+    case 'pay-bill': openPaymentModal('bill', id); break;
+    case 'del-bill': {
+      const b = state.bills.find(x=>x.id===id); if(!b) break;
+      confirmModal({
+        title:'Void bill '+b.no+'?', msg:'The payable posting will be removed from the ledger. This cannot be undone.',
+        label:'Void bill', onYes:()=>{
+          state.journal = state.journal.filter(x=>x.id!==b.entryId);
+          state.bills = state.bills.filter(x=>x.id!==id);
+          save(); render(); toast('Bill '+b.no+' voided');
+        }
+      }); break;
+    }
+    case 'open-account': openLedgerModal(id); break;
+    case 'report-tab': ui.report = t.dataset.report; render(); break;
+    case 'print-report': window.print(); break;
+    case 'close-modal': closeModal(t.closest('.modal-wrap')); break;
+    case 'jclear': ui.journal = {q:'',acc:'',from:'',to:''}; render(); break;
+    case 'export-data': {
+      const blob = new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = state.company.name.toLowerCase().replace(/[^a-z0-9]+/g,'-')+'-books.json';
+      a.click(); URL.revokeObjectURL(a.href);
+      toast('Books exported as JSON');
+      break;
+    }
+    case 'reset-data': confirmModal({
+      title:'Reset the books?', msg:'All current data will be wiped and the demo company regenerated with a fresh seven months of history.',
+      label:'Reset books', onYes:()=>{ localStorage.removeItem(KEY); seedData(); ui.view='dashboard'; ui.rep={from:fyStartISO(),to:todayISO()}; render(); toast('Fresh demo books are on the table'); }
+    }); break;
+  }
+});
+
+/* ---------- boot ---------- */
+(function boot(){
+  const fresh = !localStorage.getItem(KEY);
+  if(fresh){ seedData(); }
+  else { try{ state = JSON.parse(localStorage.getItem(KEY)); }catch(e){ seedData(); } }
+  if(!state || state.version!==1 || !state.accounts) seedData();
+  ui.rep = {from:fyStartISO(), to:todayISO()};
+  render();
+  if(fresh) toast('Sample books loaded \u2014 seven months of history for '+state.company.name);
+})();
+</script>
+</body>
+</html>
