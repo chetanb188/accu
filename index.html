@@ -983,7 +983,7 @@ function commitVoucher(chk){
     const v=cd().vouchers.find(x=>x.id===VF.edit);
     if(v){Object.assign(v,{no:VF.no.trim(),date:VF.date,type:VF.type,narr:VF.narr,entries:chk.ents,items:itemsArr});}
     toast(VF.no+' updated');
-  }else
+  }else}
     cd().vouchers.push({id:uid(),no:VF.no.trim(),type:VF.type,date:VF.date,narr:VF.narr,entries:chk.ents,items:itemsArr,createdAt:Date.now()});
     toast(VF.no+' accepted · '+fmtN(chk.td));
     flashRow=true;
