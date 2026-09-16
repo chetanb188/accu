@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Manavi — Books</title>
+<title>Book</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
@@ -346,6 +346,45 @@ tr.accrow{cursor:pointer}
   .item-grid{grid-template-columns:2fr 56px 90px 84px 30px}
   .item-grid .item-acc-c{display:none}
 }
+@media(max-width:480px){
+  html{-webkit-text-size-adjust:100%}
+  .inp,select.inp,textarea.inp{font-size:16px!important}
+  .main{padding:14px 10px 60px}
+  .viewwrap{max-width:100%}
+  h1{font-size:22px}
+  .vhead{gap:12px;padding-bottom:12px;margin-bottom:16px}
+  .vhead-actions{width:100%;flex-direction:column;align-items:stretch}
+  .vhead-actions .btn,.vhead-actions select.inp{width:100%;justify-content:center}
+  .filterbar{flex-direction:column;align-items:stretch;gap:8px}
+  .filterbar .search{width:100%}
+  .filterbar .inp{width:100%}
+  .frow{flex-direction:column;gap:10px}
+  .frow > .field{width:100%}
+  .card-h{flex-direction:column;align-items:flex-start;gap:6px;padding:14px 14px 0}
+  .card{border-radius:8px}
+  .icon-btn{width:36px;height:36px}
+  .btn{padding:11px 16px;font-size:13px}
+  .mbody{padding:14px 16px 18px}
+  .mhead{padding:16px 16px 0}
+  .mhead h3{font-size:17px}
+  .modal-wrap{padding:0;align-items:flex-end}
+  .modal{max-width:100%!important;width:100%;border-radius:16px 16px 0 0;max-height:92vh;overflow:auto}
+  .je-grid{grid-template-columns:1fr;gap:4px;padding:10px;background:var(--card-2);border-radius:8px;margin-bottom:8px}
+  .je-h{display:none}
+  .je-row{margin-bottom:0}
+  .je-row .je-rm{justify-self:end}
+  .item-grid{grid-template-columns:1fr;gap:4px;padding:10px;background:var(--card-2);border-radius:8px;margin-bottom:8px}
+  .item-h{display:none}
+  .set-grid{grid-template-columns:1fr}
+  .totbox,.inv-tot{width:100%}
+  .inv-doc{padding:20px 16px}
+  .inv-top{flex-direction:column}
+  .inv-meta{text-align:left}
+  .tblwrap.scrollx{margin:0 -10px;width:calc(100% + 20px)}
+  .tblwrap.scrollx table{font-size:12.5px}
+  #toast-root{left:12px;right:12px;bottom:12px}
+  .toast{max-width:none}
+}
 @media print{
   body::after{display:none}
   body *{visibility:hidden}
@@ -365,7 +404,7 @@ tr.accrow{cursor:pointer}
 
 <script>
 /* =====================================================
-   Manavi Books — a self-contained double-entry ledger
+   Book — a self-contained double-entry ledger
    ===================================================== */
 
 /* ---------- tiny utilities ---------- */
@@ -700,7 +739,7 @@ function initials(name){ return name.split(/\s+/).slice(0,2).map(w=>w[0]||'').jo
 
 function renderSidebar(){
   $('#sidebar').innerHTML = `
-    <div class="brand"><div class="brand-name">Manavi</div><div class="brand-sub">BOOKS \u00B7 DOUBLE-ENTRY</div></div>
+    <div class="brand"><div class="brand-name">Book</div><div class="brand-sub">BOOKS \u00B7 DOUBLE-ENTRY</div></div>
     <nav class="snav">${NAV.map(n=>`
       <a href="#" data-action="nav" data-view="${n.id}" class="${ui.view===n.id?'active':''}">
         <i data-lucide="${n.icon}"></i><span>${n.label}</span></a>`).join('')}
@@ -863,10 +902,14 @@ function renderJournal(){
   return `<div class="viewwrap">
     ${vhead('GENERAL JOURNAL','Journal',
       `${cur().journal.length} entries \u00B7 every posting balanced, debits equal credits`,
-      `<button class="btn btn-ghost" data-action="cash-receive"><i data-lucide="banknote-arrow-down"></i>Cash Receive</button>
-       <button class="btn btn-ghost" data-action="cash-payment"><i data-lucide="banknote-arrow-up"></i>Cash Payment</button>
-       <button class="btn btn-ghost" data-action="bank-receive"><i data-lucide="landmark"></i>Bank Receive</button>
-       <button class="btn btn-ghost" data-action="bank-payment"><i data-lucide="landmark"></i>Bank Payment</button>
+      `<select class="inp" id="voucherPicker" style="width:auto">
+         <option value="">+ Quick voucher</option>
+         <option value="cash-payment">Cash Payment</option>
+         <option value="cash-receipt">Cash Receipt</option>
+         <option value="bank-payment">Bank Payment</option>
+         <option value="bank-receipt">Bank Receipt</option>
+       </select>
+       <button class="btn btn-ghost" data-action="del-all-entries" ${cur().journal.length===0?'disabled':''}><i data-lucide="trash-2"></i>Delete all entries</button>
        <button class="btn btn-primary" data-action="new-entry"><i data-lucide="plus"></i>New entry</button>`)}
     <div class="filterbar">
       <div class="search"><i data-lucide="search"></i><input class="inp" id="jsearch" placeholder="Search memo or reference\u2026" value="${esc(f.q)}"></div>
@@ -1172,6 +1215,11 @@ function render(){
     $('#jacc').addEventListener('change', e=>{ ui.journal.acc = e.target.value; render(); });
     $('#jfrom').addEventListener('change', e=>{ ui.journal.from = e.target.value; render(); });
     $('#jto').addEventListener('change', e=>{ ui.journal.to = e.target.value; render(); });
+    $('#voucherPicker').addEventListener('change', e=>{
+      const kind = e.target.value;
+      e.target.value = '';
+      if(kind) openVoucherModal(kind);
+    });
   }
   if(ui.view==='reports'){
     ['repFrom','repTo'].forEach(id=>{ const el = document.getElementById(id);
@@ -1205,39 +1253,57 @@ function beamSVG(){
     </g>
     <text class="beam-bal" x="160" y="46" text-anchor="middle">\u00B7 in balance \u00B7</text></svg>`;
 }
-function openCashBankModal(kind){
-  const isReceive = kind.endsWith('receive');
-  const isCash = kind.startsWith('cash');
-  const cash = cashAccounts().filter(a=>isCash ? a.name.toLowerCase().includes('cash') : a.name.toLowerCase().includes('bank'));
-  const cashList = cash.length ? cash : cashAccounts();
-  const offsetAccounts = cur().accounts.filter(a=>a.type==='expense' || a.type==='revenue');
-  const title = `${isCash?'Cash':'Bank'} ${isReceive?'Receive':'Payment'}`;
-  const w = openModal(`
-    <div class="mhead"><h3>${title}</h3><button class="icon-btn" data-action="close-modal"><i data-lucide="x"></i></button></div>
-    <form id="cbForm"><div class="mbody">
-      <div class="frow">
-        <div class="field" style="flex:0 0 150px"><label>Date</label><input class="inp" type="date" id="cbDate" value="${todayISO()}"></div>
-        <div class="field"><label>${isReceive?'Receive into':'Pay from'}</label><select class="inp" id="cbCash">${cashList.map(a=>`<option value="${a.id}">${a.code} · ${esc(a.name)}</option>`).join('')}</select></div>
-      </div>
-      <div class="frow">
-        <div class="field"><label>${isReceive?'Income account':'Expense account'}</label><select class="inp" id="cbOffset">${offsetAccounts.map(a=>`<option value="${a.id}">${a.code} · ${esc(a.name)}</option>`).join('')}</select></div>
-        <div class="field" style="flex:0 0 160px"><label>Amount</label><input class="inp" id="cbAmt" type="number" min="0" step="any" placeholder="0.00" style="text-align:right;font-family:'IBM Plex Mono'"></div>
-      </div>
-      <div class="field"><label>Memo</label><input class="inp" id="cbMemo" placeholder="What is this transaction for?"></div>
-      <div class="mfoot"><button type="button" class="btn btn-ghost" data-action="close-modal">Cancel</button><button type="submit" class="btn btn-primary"><i data-lucide="check"></i>Post ${title}</button></div>
-    </div></form>`, {w:560});
-  $('#cbForm').onsubmit = ev => {
-    ev.preventDefault();
-    const amt=r2(num($('#cbAmt').value)); if(amt<=0){toast('Enter a valid amount.','warn');return;}
-    const cashAcc=$('#cbCash').value, offset=$('#cbOffset').value, date=$('#cbDate').value||todayISO();
-    const memo=$('#cbMemo').value.trim() || title;
-    const lines=isReceive ? [{acc:cashAcc,dr:amt},{acc:offset,cr:amt}] : [{acc:offset,dr:amt},{acc:cashAcc,cr:amt}];
-    postEntry({date,ref:(isCash?'CASH':'BANK')+'-'+Date.now().toString().slice(-5),memo,lines});
-    save(); closeModal(w); render(); toast(`${title} recorded · ${fmt(amt)}`);
-  };
-  refreshIcons();
+function voucherMeta(kind){
+  const isBank = kind.startsWith('bank');
+  const isPayment = kind.endsWith('payment');
+  const cashAccName = isBank ? 'Bank \u2014 Current' : 'Cash on Hand';
+  const label = (isBank?'Bank ':'Cash ') + (isPayment?'Payment':'Receipt');
+  return {isBank, isPayment, cashAccName, label};
 }
-
+function openVoucherModal(kind){
+  const {isPayment, cashAccName, label} = voucherMeta(kind);
+  const cashAccounts = cur().accounts.filter(a=>a.cash);
+  if(!cashAccounts.length){ toast('No cash/bank account found in the chart of accounts.','warn'); return; }
+  const defaultId = (cashAccounts.find(a=>a.name===cashAccName) || cashAccounts[0]).id;
+  const w = openModal(`
+    <div class="mhead"><h3>${label}</h3><button class="icon-btn" data-action="close-modal"><i data-lucide="x"></i></button></div>
+    <form id="vForm"><div class="mbody">
+      <div class="frow" style="margin-bottom:14px">
+        <div class="field" style="flex:0 0 150px"><label>Date</label><input class="inp" type="date" id="vDate" value="${todayISO()}"></div>
+        <div class="field" style="flex:0 0 130px"><label>Reference</label><input class="inp" id="vRef" placeholder="e.g. CHQ-01"></div>
+        <div class="field"><label>${cashAccounts.length>1?'Cash / Bank account':'Account'}</label>
+          ${cashAccounts.length>1
+            ? `<select class="inp" id="vCashAcc">${cashAccounts.map(a=>`<option value="${a.id}" ${a.id===defaultId?'selected':''}>${a.code} \u00B7 ${esc(a.name)}</option>`).join('')}</select>`
+            : `<input class="inp" value="${esc(cashAccounts[0].code+' \u00B7 '+cashAccounts[0].name)}" disabled>`}
+        </div>
+      </div>
+      <div class="frow" style="margin-bottom:14px">
+        <div class="field"><label>${isPayment ? 'Paid towards (account)' : 'Received against (account)'}</label>
+          <select class="inp" id="vOtherAcc"><option value=""></option>${accOptions()}</select>
+        </div>
+        <div class="field" style="flex:0 0 160px"><label>Amount</label><input class="inp" id="vAmt" type="number" min="0" step="any" placeholder="0.00" style="text-align:right;font-family:'IBM Plex Mono'"></div>
+      </div>
+      <div class="frow" style="margin-bottom:4px">
+        <div class="field"><label>Memo</label><input class="inp" id="vMemo" placeholder="What is this for?"></div>
+      </div>
+      <div class="mfoot"><button type="button" class="btn btn-ghost" data-action="close-modal">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i data-lucide="check"></i>Post ${label.toLowerCase()}</button></div>
+    </div></form>`, {w:560});
+  $('#vForm').onsubmit = ev=>{
+    ev.preventDefault();
+    const cashId = cashAccounts.length>1 ? $('#vCashAcc').value : cashAccounts[0].id;
+    const otherId = $('#vOtherAcc').value;
+    const amt = r2(num($('#vAmt').value));
+    if(!otherId){ toast('Pick the other account.','warn'); return; }
+    if(!(amt>0)){ toast('Enter an amount.','warn'); return; }
+    const lines = isPayment
+      ? [{acc:otherId, dr:amt}, {acc:cashId, cr:amt}]
+      : [{acc:cashId, dr:amt}, {acc:otherId, cr:amt}];
+    postEntry({date:$('#vDate').value||todayISO(), ref:$('#vRef').value.trim(), memo:$('#vMemo').value.trim() || label, lines});
+    save(); closeModal(w); render();
+    toast(`${label} of ${fmt(amt)} posted`);
+  };
+}
 function openEntryModal(editId){
   const entry = editId ? cur().journal.find(e=>e.id===editId) : null;
   const isEdit = !!entry;
@@ -1827,10 +1893,6 @@ document.addEventListener('click', e=>{
   switch(t.dataset.action){
     case 'nav': case 'goto': ui.view = t.dataset.view || t.dataset.to; ui.open = {}; closeAllModals(); render(); break;
     case 'new-entry': openEntryModal(); break;
-    case 'cash-receive': openCashBankModal('cash-receive'); break;
-    case 'cash-payment': openCashBankModal('cash-payment'); break;
-    case 'bank-receive': openCashBankModal('bank-receive'); break;
-    case 'bank-payment': openCashBankModal('bank-payment'); break;
     case 'edit-entry': requireAuth(()=>openEntryModal(id)); break;
     case 'new-invoice': openInvoiceModal(); break;
     case 'new-bill': openBillModal(); break;
