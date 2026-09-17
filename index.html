@@ -261,6 +261,11 @@ tr.jlines td{background:var(--card-2);padding:0}
 .acc-head{display:flex;justify-content:space-between;align-items:baseline;padding-bottom:9px;border-bottom:1.5px solid var(--ink)}
 .acc-head h3{font:600 11px 'IBM Plex Mono',monospace;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-2)}
 .acc-head .num{font-weight:600;font-size:13px}
+.acc-group{margin-bottom:8px}
+.acc-group-head{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--card-2);border-radius:6px 6px 0 0;font-size:12px;font-weight:600;color:var(--ink-2)}
+.acc-group-head span:first-child{flex:1}
+.acc-group-head .icon-btn{width:22px;height:22px}
+.acc-group .tbl{border-radius:0 0 6px 6px}
 tr.accrow{cursor:pointer}
 
 /* ---------- statements ---------- */
@@ -572,6 +577,7 @@ function postEntry({date, ref, memo, lines, linked}){
 }
 const accById = id => cur().accounts.find(a => a.id === id);
 const typeAccounts = t => cur().accounts.filter(a => a.type === t).sort((a,b)=>a.code.localeCompare(b.code,undefined,{numeric:true}));
+const groupsOfType = t => (cur().groups||[]).filter(g=>g.type===t);
 
 function acctRaw(id, from, to){
   let d=0, c=0;
@@ -626,7 +632,7 @@ function seedData(){
       id:'c1',
       name:'Manavi Textiles Pvt. Ltd.', address:'14, Loom Street, Coimbatore 641012',
       symbol:'\u20B9', locale:'en-IN', fyStart:4,
-      accounts:[], journal:[], invoices:[], bills:[],
+      accounts:[], journal:[], invoices:[], bills:[], groups:[],
       seq:{entry:1, inv:1, bill:1}
     }]
   };
@@ -1128,22 +1134,41 @@ function ledgerRows(accId, from='', to=''){
   return {a, opening, rows, closing: run};
 }
 function renderAccounts(){
-  const sections = ['asset','liability','equity','revenue','expense'].map(t=>{
-    const accs = typeAccounts(t);
-    const total = accs.reduce((s,a)=>s+nat(a.id),0);
-    return `<div class="acc-section"><div class="acc-head"><h3>${TYPE_LABEL[t]}</h3><span class="num">${fmt(total)}</span></div>
-      <div class="tblwrap" style="border-radius:0 0 10px 10px;border-top:none"><table class="tbl"><tbody>
-      ${accs.map(a=>`<tr class="accrow" data-action="open-account" data-id="${a.id}">
+  function accRow(a){
+    return `<tr class="accrow" data-action="open-account" data-id="${a.id}">
         <td style="width:80px"><span class="code">${a.code}</span></td>
         <td><b>${esc(a.name)}</b>${a.cash?' <span class="lmemo" style="color:var(--ink-3);font-size:11px">\u00B7 cash</span':''}${a.group==='cogs'?' <span style="color:var(--ink-3);font-size:11px">\u00B7 direct cost</span':''}</td>
         <td class="num">${fmt(nat(a.id))}</td>
-        <td style="width:44px"><button class="icon-btn" title="Edit account" data-action="edit-account" data-id="${a.id}"><i data-lucide="pencil"></i></button></td></tr>`).join('')}
-      </tbody></table></div></div>`;
+        <td style="width:44px"><button class="icon-btn" title="Edit account" data-action="edit-account" data-id="${a.id}"><i data-lucide="pencil"></i></button></td></tr>`;
+  }
+  const sections = ['asset','liability','equity','revenue','expense'].map(t=>{
+    const accs = typeAccounts(t);
+    const total = accs.reduce((s,a)=>s+nat(a.id),0);
+    const groups = groupsOfType(t);
+    const grouped = groups.map(g=>{
+      const gAccs = accs.filter(a=>a.groupId===g.id);
+      if(!gAccs.length) return '';
+      const gTotal = gAccs.reduce((s,a)=>s+nat(a.id),0);
+      return `<div class="acc-group">
+        <div class="acc-group-head">
+          <span>${esc(g.name)}</span><span class="num">${fmt(gTotal)}</span>
+          <button class="icon-btn" title="Delete group" data-action="del-group" data-id="${g.id}"><i data-lucide="x"></i></button>
+        </div>
+        <table class="tbl"><tbody>${gAccs.map(accRow).join('')}</tbody></table>
+      </div>`;
+    }).join('');
+    const ungrouped = accs.filter(a=>!a.groupId || !groups.some(g=>g.id===a.groupId));
+    const ungroupedHtml = ungrouped.length ? `<table class="tbl"><tbody>${ungrouped.map(accRow).join('')}</tbody></table>` : '';
+    return `<div class="acc-section"><div class="acc-head"><h3>${TYPE_LABEL[t]}</h3><span class="num">${fmt(total)}</span></div>
+      <div class="tblwrap" style="border-radius:0 0 10px 10px;border-top:none;padding:${groups.length?'8px':'0'}">
+      ${grouped}${ungrouped.length && groups.length ? '<div class="acc-group-head" style="border-top:1px dashed var(--line);margin-top:4px"><span>Ungrouped</span><span></span><span></span></div>':''}${ungroupedHtml}
+      </div></div>`;
   }).join('');
   return `<div class="viewwrap">
     ${vhead('CHART OF ACCOUNTS','Accounts',
       'The spine of the books \u2014 click any account to open its ledger',
-      `<button class="btn btn-primary" data-action="new-account"><i data-lucide="plus"></i>New account</button>`)}
+      `<button class="btn btn-ghost" data-action="new-group"><i data-lucide="folder-plus"></i>New account group</button>
+       <button class="btn btn-primary" data-action="new-account"><i data-lucide="plus"></i>New account</button>`)}
     ${sections}
   </div>`;
 }
@@ -1773,6 +1798,31 @@ function openLedgerModal(accId){
       <tfoot><tr><td colspan="5">Closing balance</td><td class="num">${fmt(closing)}</td></tr></tfoot></table>
     </div>`, {w:820});
 }
+function openGroupModal(){
+  const w = openModal(`
+    <div class="mhead"><h3>New account group</h3><button class="icon-btn" data-action="close-modal"><i data-lucide="x"></i></button></div>
+    <form id="grpForm"><div class="mbody">
+      <div class="frow" style="margin-bottom:14px">
+        <div class="field"><label>Group name</label><input class="inp" id="grpName" placeholder="e.g. Bank Accounts, Sundry Debtors"></div>
+        <div class="field" style="flex:0 0 170px"><label>Under</label><select class="inp" id="grpType">
+          ${Object.keys(TYPE_LABEL).map(t=>`<option value="${t}">${TYPE_LABEL[t]}</option>`).join('')}</select></div>
+      </div>
+      <p style="font-size:12px;color:var(--ink-3)">Groups cluster accounts of the same type in the chart of accounts \u2014 like Bank Accounts under Assets, or Direct Expenses under Expenses.</p>
+      <div class="mfoot"><button type="button" class="btn btn-ghost" data-action="close-modal">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i data-lucide="plus"></i>Create group</button></div>
+    </div></form>`, {w:480});
+  $('#grpForm').onsubmit = ev => {
+    ev.preventDefault();
+    const name = $('#grpName').value.trim();
+    if(!name){ toast('Give the group a name.','warn'); return; }
+    const type = $('#grpType').value;
+    if(!cur().groups) cur().groups = [];
+    if(cur().groups.some(g=>g.type===type && g.name.toLowerCase()===name.toLowerCase())){ toast('A group with that name already exists here.','warn'); return; }
+    cur().groups.push({id:'g'+Date.now().toString(36)+Math.random().toString(36).slice(2,5), name, type});
+    save(); closeModal(w); render();
+    toast(`Group "${name}" created`);
+  };
+}
 function openAccountModal(editId){
   const acc = editId ? cur().accounts.find(a=>a.id===editId) : null;
   const isEdit = !!acc;
@@ -1790,11 +1840,22 @@ function openAccountModal(editId){
           <option value="" ${isEdit&&!acc.group?'selected':''}>Operating</option><option value="cogs" ${isEdit&&acc.group==='cogs'?'selected':''}>Cost of goods sold</option></select></div>
         ${isEdit?'':`<div class="field"><label>Opening balance</label><input class="inp" id="accOpen" type="number" step="any" value="0" style="text-align:right;font-family:'IBM Plex Mono'"></div>`}
       </div>
+      <div class="frow" style="margin-bottom:14px">
+        <div class="field"><label>Account group (optional)</label><select class="inp" id="accCustomGroup"></select></div>
+      </div>
       <p style="font-size:12px;color:var(--ink-3)">${isEdit ? 'Changing the type does not move past postings between statements.' : 'An opening balance posts against Opening Balance Equity so the books stay trued.'}</p>
       <div class="mfoot">${isEdit?'<button type="button" class="btn btn-ghost" data-action="del-account" data-id="'+acc.id+'" style="margin-right:auto"><i data-lucide="trash-2"></i>Delete account</button>':''}<button type="button" class="btn btn-ghost" data-action="close-modal">Cancel</button>
         <button type="submit" class="btn btn-primary"><i data-lucide="${isEdit?'check':'plus'}"></i>${isEdit?'Save changes':'Create account'}</button></div>
     </div></form>`, {w:560});
-  $('#accType').addEventListener('change', e=>{ $('#accGroupW').style.display = e.target.value==='expense' ? '' : 'none'; });
+  function refreshCustomGroupOptions(){
+    const type = $('#accType').value;
+    const gs = groupsOfType(type);
+    const sel = $('#accCustomGroup');
+    sel.innerHTML = '<option value="">None</option>' + gs.map(g=>`<option value="${g.id}">${esc(g.name)}</option>`).join('');
+    if(isEdit && acc.groupId && gs.some(g=>g.id===acc.groupId)) sel.value = acc.groupId;
+  }
+  refreshCustomGroupOptions();
+  $('#accType').addEventListener('change', e=>{ $('#accGroupW').style.display = e.target.value==='expense' ? '' : 'none'; refreshCustomGroupOptions(); });
   $('#accForm').onsubmit = ev => {
     ev.preventDefault();
     const code = $('#accCode').value.trim(), name = $('#accName').value.trim();
@@ -1802,16 +1863,18 @@ function openAccountModal(editId){
     if(!name){ toast('Give the account a name.','warn'); return; }
     if(cur().accounts.some(a=>a.code===code && (!isEdit || a.id!==acc.id))){ toast('That code is already taken.','warn'); return; }
     const type = $('#accType').value;
+    const groupId = $('#accCustomGroup').value || null;
     if(isEdit){
       acc.code = code; acc.name = name; acc.type = type;
       acc.normalDebit = (type==='asset'||type==='expense');
       acc.group = type==='expense' ? $('#accGroup').value : '';
+      acc.groupId = groupId;
       save(); closeModal(w); render();
       toast(`Account ${code} \u00B7 ${name} updated`);
       return;
     }
     const newAcc = {id:'a'+code+'-'+Math.random().toString(36).slice(2,5), code, name, type,
-      normalDebit:(type==='asset'||type==='expense'), group: type==='expense' ? $('#accGroup').value : ''};
+      normalDebit:(type==='asset'||type==='expense'), group: type==='expense' ? $('#accGroup').value : '', groupId};
     cur().accounts.push(newAcc);
     const open = r2(num($('#accOpen').value));
     if(Math.abs(open) > 0.004){
@@ -1932,7 +1995,7 @@ function openNewCompanyModal(){
     const newCo = {
       id, name, address:addr, symbol:sym, locale:loc, fyStart:fy,
       accounts: defaultChartOfAccounts(),
-      journal:[], invoices:[], bills:[],
+      journal:[], invoices:[], bills:[], groups:[],
       seq:{entry:1, inv:1, bill:1}
     };
     state.companies.push(newCo);
@@ -2049,6 +2112,20 @@ document.addEventListener('click', e=>{
     case 'new-invoice': openInvoiceModal(); break;
     case 'new-bill': openBillModal(); break;
     case 'new-account': openAccountModal(); break;
+    case 'new-group': openGroupModal(); break;
+    case 'del-group': requireAuth(()=>{
+      const g = (cur().groups||[]).find(x=>x.id===id); if(!g) return;
+      confirmModal({
+        title:'Delete group '+esc(g.name)+'?',
+        msg:'Accounts in this group move back to Ungrouped. No accounts or postings are deleted.',
+        label:'Delete group', onYes:()=>{
+          cur().groups = cur().groups.filter(x=>x.id!==id);
+          cur().accounts.forEach(a=>{ if(a.groupId===id) a.groupId = null; });
+          save(); render();
+          toast('Group deleted');
+        }
+      });
+    }); break;
     case 'edit-account': requireAuth(()=>openAccountModal(id)); break;
     case 'del-account': {
       const acc = cur().accounts.find(a=>a.id===id); if(!acc) break;
@@ -2163,7 +2240,7 @@ document.addEventListener('click', e=>{
         label:'Reset books', onYes:()=>{
           const c = cur();
           c.accounts = defaultChartOfAccounts();
-          c.journal = []; c.invoices = []; c.bills = [];
+          c.journal = []; c.invoices = []; c.bills = []; c.groups = [];
           c.seq = {entry:1, inv:1, bill:1};
           save();
           ui.view='dashboard'; ui.journal={q:'',acc:'',from:'',to:''}; ui.rep={from:fyStartISO(),to:todayISO()}; ui.repAcc='';
