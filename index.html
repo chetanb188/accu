@@ -8,6 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -1248,11 +1250,167 @@ function glHTML(accId, from, to){
     </tbody>
     <tfoot><tr><td colspan="5">Closing balance \u2014 ${esc(a.name)}</td><td class="num">${fmt(closing)}</td></tr></tfoot></table></div>`;
 }
+function fileSlug(s){ return s.toLowerCase().replace(/[^a-z0-9]+/g,'-'); }
+function csvEscape(v){
+  const s = String(v ?? '');
+  return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+}
+function downloadCSV(filename, rows){
+  const csv = rows.map(r => r.map(csvEscape).join(',')).join('\r\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click(); URL.revokeObjectURL(a.href);
+}
+function exportReportExcel(){
+  const r = ui.rep, co = cur().name;
+  if(ui.report==='tb'){
+    const to = r.to;
+    const rows = cur().accounts.slice().sort((a,b)=>a.code.localeCompare(b.code,undefined,{numeric:true}))
+      .map(a=>{ const raw = acctRaw(a.id,'',to); return {a, dr: raw>0.004?raw:0, cr: raw<-0.004?-raw:0}; })
+      .filter(x=>x.dr||x.cr);
+    const td=r2(rows.reduce((s,x)=>s+x.dr,0)), tc=r2(rows.reduce((s,x)=>s+x.cr,0));
+    const out = [[co],['Trial Balance'],['As of', fmtDate(to)],[],['Code','Account','Debit','Credit']];
+    rows.forEach(x=>out.push([x.a.code, x.a.name, x.dr?r2(x.dr):'', x.cr?r2(x.cr):'']));
+    out.push([],['','Totals', td, tc]);
+    downloadCSV(fileSlug(co)+'-trial-balance.csv', out);
+  } else if(ui.report==='pl'){
+    const from=r.from||fyStartISO(), to=r.to;
+    const rev = typeAccounts('revenue').map(a=>({a,v:nat(a.id,from,to)})).filter(x=>Math.abs(x.v)>0.004);
+    const cogs = typeAccounts('expense').filter(a=>a.group==='cogs').map(a=>({a,v:nat(a.id,from,to)})).filter(x=>Math.abs(x.v)>0.004);
+    const exp = typeAccounts('expense').filter(a=>a.group!=='cogs').map(a=>({a,v:nat(a.id,from,to)})).filter(x=>Math.abs(x.v)>0.004);
+    const tR=r2(rev.reduce((s,x)=>s+x.v,0)), tC=r2(cogs.reduce((s,x)=>s+x.v,0)), tE=r2(exp.reduce((s,x)=>s+x.v,0));
+    const gross=r2(tR-tC), net=r2(gross-tE);
+    const out=[[co],['Income Statement'],['Period', fmtDate(from)+' to '+fmtDate(to)],[],['Section','Account','Amount']];
+    rev.forEach(x=>out.push(['Revenue', x.a.name, r2(x.v)]));
+    out.push(['','Total revenue', tR]);
+    cogs.forEach(x=>out.push(['Cost of goods sold', x.a.name, r2(x.v)]));
+    out.push(['','Gross profit', gross]);
+    exp.forEach(x=>out.push(['Operating expense', x.a.name, r2(x.v)]));
+    out.push(['','Total operating expenses', tE]);
+    out.push([],['', 'Net '+(net>=0?'profit':'loss'), net]);
+    downloadCSV(fileSlug(co)+'-income-statement.csv', out);
+  } else if(ui.report==='bs'){
+    const to=r.to;
+    const assets=typeAccounts('asset').map(a=>({a,v:nat(a.id,'',to)})).filter(x=>Math.abs(x.v)>0.004);
+    const liabs=typeAccounts('liability').map(a=>({a,v:nat(a.id,'',to)})).filter(x=>Math.abs(x.v)>0.004);
+    const eqs=typeAccounts('equity').map(a=>({a,v:nat(a.id,'',to)})).filter(x=>Math.abs(x.v)>0.004);
+    const net = r2(typeNatSum('revenue','',to) - typeNatSum('expense','',to));
+    const tA=r2(assets.reduce((s,x)=>s+x.v,0)), tL=r2(liabs.reduce((s,x)=>s+x.v,0)), tE=r2(eqs.reduce((s,x)=>s+x.v,0));
+    const out=[[co],['Balance Sheet'],['As of', fmtDate(to)],[],['Section','Account','Amount']];
+    assets.forEach(x=>out.push(['Assets', x.a.name, r2(x.v)]));
+    out.push(['','Total assets', tA]);
+    liabs.forEach(x=>out.push(['Liabilities', x.a.name, r2(x.v)]));
+    out.push(['','Total liabilities', tL]);
+    eqs.forEach(x=>out.push(['Equity', x.a.name, r2(x.v)]));
+    out.push(['','Retained earnings (current period)', net]);
+    out.push(['','Total liabilities & equity', r2(tL+tE+net)]);
+    downloadCSV(fileSlug(co)+'-balance-sheet.csv', out);
+  } else if(ui.report==='gl'){
+    const accId = ui.repAcc;
+    const {a, opening, rows, closing} = ledgerRows(accId, r.from||fyStartISO(), r.to);
+    const out=[[co],['General Ledger \u2014 '+a.name],['Period', (r.from?fmtDate(r.from)+' to ':'')+fmtDate(r.to)],[],['Date','Ref','Particulars','Debit','Credit','Balance']];
+    if(r.from) out.push([fmtDate(addDays(r.from,-1)),'','Opening balance','','', r2(opening)]);
+    rows.forEach(x=>out.push([fmtDate(x.e.date), x.e.ref||'', x.e.memo + (x.l.memo?(' - '+x.l.memo):''), x.l.dr?r2(x.l.dr):'', x.l.cr?r2(x.l.cr):'', r2(x.bal)]));
+    out.push([],['','Closing balance','','', r2(closing)]);
+    downloadCSV(fileSlug(co)+'-general-ledger-'+a.code+'.csv', out);
+  }
+  toast('Report exported for Excel');
+}
+function fmtPdf(n){
+  n = r2(n);
+  const c = cur(), neg = n < -0.004, v = Math.abs(n);
+  const sym = c.symbol === '\u20B9' ? 'Rs ' : (/[A-Za-z]/.test(c.symbol) ? c.symbol+' ' : c.symbol);
+  const s = sym + v.toLocaleString(c.locale, {minimumFractionDigits:2, maximumFractionDigits:2});
+  return neg ? '('+s+')' : s;
+}
+function pdfHeader(doc, co, title, sub){
+  doc.setFont('helvetica','bold'); doc.setFontSize(14); doc.text(co, 40, 42);
+  doc.setFontSize(11); doc.text(title, 40, 60);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(110);
+  doc.text(sub, 40, 75);
+  doc.setTextColor(0);
+}
+function exportReportPDF(){
+  if(!window.jspdf){ toast('PDF library did not load \u2014 check your connection.','err'); return; }
+  const { jsPDF } = window.jspdf;
+  const r = ui.rep, co = cur().name;
+  const doc = new jsPDF({unit:'pt', format:'a4'});
+  if(ui.report==='tb'){
+    const to = r.to;
+    const rows = cur().accounts.slice().sort((a,b)=>a.code.localeCompare(b.code,undefined,{numeric:true}))
+      .map(a=>{ const raw = acctRaw(a.id,'',to); return {a, dr: raw>0.004?raw:0, cr: raw<-0.004?-raw:0}; })
+      .filter(x=>x.dr||x.cr);
+    const td=r2(rows.reduce((s,x)=>s+x.dr,0)), tc=r2(rows.reduce((s,x)=>s+x.cr,0));
+    pdfHeader(doc, co, 'Trial Balance', 'As of '+fmtDate(to));
+    doc.autoTable({ startY:92, head:[['Code','Account','Debit','Credit']],
+      body: rows.map(x=>[x.a.code, x.a.name, x.dr?fmtPdf(x.dr):'', x.cr?fmtPdf(x.cr):'']),
+      foot:[['','Totals', fmtPdf(td), fmtPdf(tc)]],
+      columnStyles:{2:{halign:'right'},3:{halign:'right'}}, styles:{fontSize:9}, headStyles:{fillColor:[27,42,74]}, footStyles:{fillColor:[240,240,240],textColor:0} });
+    doc.save(fileSlug(co)+'-trial-balance.pdf');
+  } else if(ui.report==='pl'){
+    const from=r.from||fyStartISO(), to=r.to;
+    const rev = typeAccounts('revenue').map(a=>({a,v:nat(a.id,from,to)})).filter(x=>Math.abs(x.v)>0.004);
+    const cogs = typeAccounts('expense').filter(a=>a.group==='cogs').map(a=>({a,v:nat(a.id,from,to)})).filter(x=>Math.abs(x.v)>0.004);
+    const exp = typeAccounts('expense').filter(a=>a.group!=='cogs').map(a=>({a,v:nat(a.id,from,to)})).filter(x=>Math.abs(x.v)>0.004);
+    const tR=r2(rev.reduce((s,x)=>s+x.v,0)), tC=r2(cogs.reduce((s,x)=>s+x.v,0)), tE=r2(exp.reduce((s,x)=>s+x.v,0));
+    const gross=r2(tR-tC), net=r2(gross-tE);
+    pdfHeader(doc, co, 'Income Statement', fmtDate(from)+' \u2014 '+fmtDate(to));
+    const body = [];
+    rev.forEach(x=>body.push([x.a.name, fmtPdf(x.v)]));
+    body.push([{content:'Total revenue',styles:{fontStyle:'bold'}}, {content:fmtPdf(tR),styles:{fontStyle:'bold'}}]);
+    cogs.forEach(x=>body.push([x.a.name, fmtPdf(x.v)]));
+    body.push([{content:'Gross profit',styles:{fontStyle:'bold'}}, {content:fmtPdf(gross),styles:{fontStyle:'bold'}}]);
+    exp.forEach(x=>body.push([x.a.name, fmtPdf(x.v)]));
+    body.push([{content:'Total operating expenses',styles:{fontStyle:'bold'}}, {content:fmtPdf(tE),styles:{fontStyle:'bold'}}]);
+    body.push([{content:'Net '+(net>=0?'profit':'loss'),styles:{fontStyle:'bold'}}, {content:fmtPdf(net),styles:{fontStyle:'bold'}}]);
+    doc.autoTable({ startY:92, head:[['Account','Amount']], body,
+      columnStyles:{1:{halign:'right'}}, styles:{fontSize:9}, headStyles:{fillColor:[27,42,74]} });
+    doc.save(fileSlug(co)+'-income-statement.pdf');
+  } else if(ui.report==='bs'){
+    const to=r.to;
+    const assets=typeAccounts('asset').map(a=>({a,v:nat(a.id,'',to)})).filter(x=>Math.abs(x.v)>0.004);
+    const liabs=typeAccounts('liability').map(a=>({a,v:nat(a.id,'',to)})).filter(x=>Math.abs(x.v)>0.004);
+    const eqs=typeAccounts('equity').map(a=>({a,v:nat(a.id,'',to)})).filter(x=>Math.abs(x.v)>0.004);
+    const net = r2(typeNatSum('revenue','',to) - typeNatSum('expense','',to));
+    const tA=r2(assets.reduce((s,x)=>s+x.v,0)), tL=r2(liabs.reduce((s,x)=>s+x.v,0)), tE=r2(eqs.reduce((s,x)=>s+x.v,0));
+    pdfHeader(doc, co, 'Balance Sheet', 'As of '+fmtDate(to));
+    const body = [];
+    body.push([{content:'Assets',styles:{fontStyle:'bold',fillColor:[240,240,240]}}, '']);
+    assets.forEach(x=>body.push([x.a.name, fmtPdf(x.v)]));
+    body.push([{content:'Total assets',styles:{fontStyle:'bold'}}, {content:fmtPdf(tA),styles:{fontStyle:'bold'}}]);
+    body.push([{content:'Liabilities',styles:{fontStyle:'bold',fillColor:[240,240,240]}}, '']);
+    liabs.forEach(x=>body.push([x.a.name, fmtPdf(x.v)]));
+    body.push([{content:'Total liabilities',styles:{fontStyle:'bold'}}, {content:fmtPdf(tL),styles:{fontStyle:'bold'}}]);
+    body.push([{content:'Equity',styles:{fontStyle:'bold',fillColor:[240,240,240]}}, '']);
+    eqs.forEach(x=>body.push([x.a.name, fmtPdf(x.v)]));
+    body.push(['Retained earnings (current period)', fmtPdf(net)]);
+    body.push([{content:'Total liabilities & equity',styles:{fontStyle:'bold'}}, {content:fmtPdf(r2(tL+tE+net)),styles:{fontStyle:'bold'}}]);
+    doc.autoTable({ startY:92, head:[['Account','Amount']], body,
+      columnStyles:{1:{halign:'right'}}, styles:{fontSize:9}, headStyles:{fillColor:[27,42,74]} });
+    doc.save(fileSlug(co)+'-balance-sheet.pdf');
+  } else if(ui.report==='gl'){
+    const accId = ui.repAcc;
+    const {a, opening, rows, closing} = ledgerRows(accId, r.from||fyStartISO(), r.to);
+    pdfHeader(doc, co, 'General Ledger \u2014 '+a.name, (r.from?fmtDate(r.from)+' \u2014 ':'')+fmtDate(r.to));
+    const body = [];
+    if(r.from) body.push([fmtDate(addDays(r.from,-1)), '', 'Opening balance', '', '', fmtPdf(opening)]);
+    rows.forEach(x=>body.push([fmtDate(x.e.date), x.e.ref||'', x.e.memo + (x.l.memo?(' \u2014 '+x.l.memo):''), x.l.dr?fmtPdf(x.l.dr):'', x.l.cr?fmtPdf(x.l.cr):'', fmtPdf(x.bal)]));
+    body.push([{content:'Closing balance',colSpan:5,styles:{fontStyle:'bold'}}, {content:fmtPdf(closing),styles:{fontStyle:'bold'}}]);
+    doc.autoTable({ startY:92, head:[['Date','Ref','Particulars','Debit','Credit','Balance']], body,
+      columnStyles:{3:{halign:'right'},4:{halign:'right'},5:{halign:'right'}}, styles:{fontSize:8.5}, headStyles:{fillColor:[27,42,74]} });
+    doc.save(fileSlug(co)+'-general-ledger-'+a.code+'.pdf');
+  }
+  toast('Report exported as PDF');
+}
 function renderReports(){
   const r = ui.rep, tabs = [['tb','Trial balance'],['pl','Income statement'],['bs','Balance sheet'],['gl','General ledger']];
   const ctl = `
     ${ui.report==='pl'||ui.report==='gl' ? `<div><label>From</label><input class="inp" type="date" id="repFrom" value="${r.from}"></div>`:''}
     <div><label>${ui.report==='tb'||ui.report==='bs' ? 'As of' : 'To'}</label><input class="inp" type="date" id="repTo" value="${r.to}"></div>
+    <button class="btn btn-ghost" data-action="export-report-excel"><i data-lucide="sheet"></i>Export Excel</button>
+    <button class="btn btn-ghost" data-action="export-report-pdf"><i data-lucide="file-text"></i>Export PDF</button>
     <button class="btn btn-ghost" data-action="print-report"><i data-lucide="printer"></i>Print</button>`;
   let body='';
   if(ui.report==='tb') body = tbHTML(r.to);
@@ -2208,6 +2366,8 @@ document.addEventListener('click', e=>{
     }
     case 'open-account': openLedgerModal(id); break;
     case 'report-tab': ui.report = t.dataset.report; render(); break;
+    case 'export-report-excel': exportReportExcel(); break;
+    case 'export-report-pdf': exportReportPDF(); break;
     case 'print-report': window.print(); break;
     case 'close-modal': closeModal(t.closest('.modal-wrap')); break;
     case 'jclear': ui.journal = {q:'',acc:'',from:'',to:''}; render(); break;
