@@ -7,6 +7,50 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBisWicqK1sXwgKEJ7G9L9XxvNE2ReEe4s",
+    authDomain: "book-1ee69.firebaseapp.com",
+    projectId: "book-1ee69",
+    storageBucket: "book-1ee69.firebasestorage.app",
+    messagingSenderId: "333112328687",
+    appId: "1:333112328687:web:e61f000a95e1b4082cb61a",
+    measurementId: "G-SKT74DSNXL"
+  };
+  const fbApp = initializeApp(firebaseConfig);
+  const db = getFirestore(fbApp);
+  const DOC_REF = doc(db, 'books_app', 'main');
+
+  window.__fbSave = async (state) => {
+    try{
+      await setDoc(DOC_REF, { state, updatedAt: Date.now() });
+      window.__onFbStatus && window.__onFbStatus('online');
+    }catch(e){
+      console.error('Firestore save failed', e);
+      window.__onFbStatus && window.__onFbStatus('error');
+    }
+  };
+
+  onSnapshot(DOC_REF, (snap)=>{
+    const fromCache = snap.metadata.fromCache;
+    const pending = snap.metadata.hasPendingWrites;
+    window.__onFbStatus && window.__onFbStatus(fromCache ? 'offline' : 'online');
+    if(pending) return; // this is the echo of our own write, ignore
+    if(snap.exists() && snap.data().state){
+      window.__setRemoteState && window.__setRemoteState(snap.data().state);
+    } else if(!snap.exists()){
+      const local = window.__getLocalState && window.__getLocalState();
+      if(local) window.__fbSave(local);
+    }
+  }, (err)=>{
+    console.error('Firestore listen failed', err);
+    window.__onFbStatus && window.__onFbStatus('error');
+  });
+</script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -445,6 +489,41 @@ function fmtC(n){
   return s + Math.round(v).toLocaleString(c.locale);
 }
 
+/* ---------- SQLite (.sqlite) export / import via sql.js ---------- */
+let sqlJsPromise = null;
+function getSqlJs(){
+  if(!sqlJsPromise){
+    sqlJsPromise = initSqlJs({ locateFile: f => 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/' + f });
+  }
+  return sqlJsPromise;
+}
+async function buildSqliteBlob(){
+  const SQL = await getSqlJs();
+  const db = new SQL.Database();
+  db.run(`CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT);
+          CREATE TABLE companies (id TEXT PRIMARY KEY, name TEXT, data TEXT);`);
+  db.run("INSERT INTO meta (key,value) VALUES ('version',?),('activeId',?)", [String(state.version||2), state.activeId]);
+  const ins = db.prepare("INSERT INTO companies (id,name,data) VALUES (?,?,?)");
+  state.companies.forEach(c => ins.run([c.id, c.name, JSON.stringify(c)]));
+  ins.free();
+  const bytes = db.export();
+  db.close();
+  return new Blob([bytes], {type:'application/x-sqlite3'});
+}
+async function loadStateFromSqliteFile(file){
+  const SQL = await getSqlJs();
+  const buf = new Uint8Array(await file.arrayBuffer());
+  const db = new SQL.Database(buf);
+  const metaRes = db.exec("SELECT key,value FROM meta");
+  const meta = {};
+  if(metaRes[0]) metaRes[0].values.forEach(([k,v])=>meta[k]=v);
+  const coRes = db.exec("SELECT id,data FROM companies");
+  const companies = coRes[0] ? coRes[0].values.map(([id,data])=>JSON.parse(data)) : [];
+  db.close();
+  if(!companies.length) throw new Error('No companies found in this file.');
+  return { version: +meta.version || 2, activeId: meta.activeId || companies[0].id, companies };
+}
+
 /* ---------- state ---------- */
 const KEY = 'manavi-books-v2'; // bumped from v1 to force a one-time reset of demo data
 let state = null;
@@ -455,7 +534,26 @@ const ui = {
   rep:{from:'', to:''},
   repAcc:''
 };
-const save = () => localStorage.setItem(KEY, JSON.stringify(state));
+const save = () => { localStorage.setItem(KEY, JSON.stringify(state)); window.__fbSave && window.__fbSave(state); };
+window.__getLocalState = () => state;
+window.__setRemoteState = (remote) => {
+  if(!remote || JSON.stringify(remote) === JSON.stringify(state)) return;
+  if(document.querySelector('.modal-wrap')) return; // don't yank the UI mid-edit
+  state = remote;
+  localStorage.setItem(KEY, JSON.stringify(state));
+  render();
+};
+window.__onFbStatus = (status) => {
+  window.__fbStatus = status;
+  const el = document.getElementById('fbSyncBadge');
+  if(el) paintSyncBadge(el, status);
+};
+function paintSyncBadge(el, status){
+  const map = { connecting:['\u23F3 Connecting\u2026','var(--ink-3)'], online:['\uD83D\uDFE2 Synced live','var(--green)'],
+    offline:['\uD83D\uDFE0 Offline (last saved data)','var(--amber)'], error:['\uD83D\uDD34 Sync error','var(--red)'] };
+  const [txt,col] = map[status] || map.connecting;
+  el.textContent = txt; el.style.color = col;
+}
 /* multi-company: returns the active company object that owns accounts/journal/etc. */
 const cur = () => (state && state.companies && state.companies.length)
   ? state.companies.find(c => c.id === state.activeId) || state.companies[0]
@@ -1176,14 +1274,20 @@ function renderSettings(){
           <div class="kv"><span>Vendor bills</span><b>${cur().bills.length}</b></div>
           <div class="kv"><span>Accounts</span><b>${cur().accounts.length}</b></div>
           <div class="kv"><span>Companies in workspace</span><b>${state.companies.length}</b></div>
-          <div class="kv" style="border-bottom:none"><span>Storage</span><b>localStorage</b></div>
+          <div class="kv" style="border-bottom:none"><span>Storage</span><b>localStorage + Cloud</b></div>
+          <div class="kv" style="border-bottom:none"><span>Cloud sync</span><b id="fbSyncBadge">\u23F3 Connecting\u2026</b></div>
           <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:8px">
             <button class="btn btn-ghost" data-action="export-data"><i data-lucide="download"></i>Export books (JSON)</button>
+            <button class="btn btn-ghost" data-action="import-data"><i data-lucide="upload"></i>Import books (JSON)</button>
+            <button class="btn btn-ghost" data-action="export-sqlite"><i data-lucide="database"></i>Export as SQLite (.sqlite)</button>
+            <button class="btn btn-ghost" data-action="import-sqlite"><i data-lucide="database-backup"></i>Import from SQLite</button>
             <button class="btn btn-ghost" data-action="open-companies"><i data-lucide="building-2"></i>Manage companies</button>
           </div>
+          <input type="file" id="importFile" accept="application/json,.json" style="display:none">
+          <input type="file" id="importSqliteFile" accept=".sqlite,.db,.sqlite3,application/x-sqlite3" style="display:none">
         </div>
         <div class="card set-card danger-zone">
-          <h3>Start over</h3><p class="sub">Wipes the books of <b>${esc(cur().name)}</b> only and regenerates a fresh seven months of demo history. Other companies are not touched.</p>
+          <h3>Start over</h3><p class="sub">Wipes the books of <b>${esc(cur().name)}</b> only \u2014 chart of accounts resets to default and journal/invoices/bills go empty. Other companies are not touched.</p>
           <button class="btn btn-outline-danger" data-action="reset-data"><i data-lucide="rotate-ccw"></i>Reset this company's books</button>
         </div>
       </div>
@@ -1227,6 +1331,7 @@ function render(){
     const sel = $('#repAcc'); if(sel){ sel.value = ui.repAcc; sel.addEventListener('change', ()=>{ ui.repAcc = sel.value; render(); }); }
   }
   if(ui.view==='settings'){
+    if(window.__fbStatus) paintSyncBadge($('#fbSyncBadge'), window.__fbStatus);
     $('#setForm').addEventListener('submit', e=>{
       e.preventDefault();
       cur().name = $('#setName').value.trim() || cur().name;
@@ -1235,6 +1340,53 @@ function render(){
       cur().locale = $('#setLoc').value;
       cur().fyStart = +$('#setFy').value;
       save(); toast('Settings saved'); render();
+    });
+    $('#importFile').addEventListener('change', e=>{
+      const file = e.target.files[0];
+      e.target.value = '';
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        let parsed;
+        try{ parsed = JSON.parse(reader.result); }
+        catch(err){ toast('That file is not valid JSON.','err'); return; }
+        if(!parsed || !Array.isArray(parsed.companies) || !parsed.activeId){
+          toast('That does not look like a books export.','err'); return;
+        }
+        confirmModal({
+          title:'Replace all books with this file?',
+          msg:'Everything currently in this workspace \u2014 all companies, entries, invoices and bills \u2014 will be replaced by the contents of "'+esc(file.name)+'". This cannot be undone.',
+          label:'Import & replace', onYes:()=>{
+            state = parsed;
+            save();
+            ui.view='dashboard'; ui.journal={q:'',acc:'',from:'',to:''}; ui.rep={from:fyStartISO(),to:todayISO()}; ui.repAcc='';
+            render();
+            toast('Books imported from '+file.name);
+          }
+        });
+      };
+      reader.readAsText(file);
+    });
+    $('#importSqliteFile').addEventListener('change', e=>{
+      const file = e.target.files[0];
+      e.target.value = '';
+      if(!file) return;
+      loadStateFromSqliteFile(file).then(parsed=>{
+        confirmModal({
+          title:'Replace all books with this SQLite file?',
+          msg:'Everything currently in this workspace \u2014 all companies, entries, invoices and bills \u2014 will be replaced by the contents of "'+esc(file.name)+'". This cannot be undone.',
+          label:'Import & replace', onYes:()=>{
+            state = parsed;
+            save();
+            ui.view='dashboard'; ui.journal={q:'',acc:'',from:'',to:''}; ui.rep={from:fyStartISO(),to:todayISO()}; ui.repAcc='';
+            render();
+            toast('Books imported from '+file.name);
+          }
+        });
+      }).catch(err=>{
+        console.error(err);
+        toast('Could not read that SQLite file.','err');
+      });
     });
   }
   refreshIcons();
@@ -1991,6 +2143,19 @@ document.addEventListener('click', e=>{
       toast('Books exported as JSON');
       break;
     }
+    case 'import-data': requireAuth(()=>$('#importFile').click()); break;
+    case 'export-sqlite': {
+      toast('Building SQLite file\u2026');
+      buildSqliteBlob().then(blob=>{
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = cur().name.toLowerCase().replace(/[^a-z0-9]+/g,'-')+'-books.sqlite';
+        a.click(); URL.revokeObjectURL(a.href);
+        toast('Books exported as SQLite');
+      }).catch(err=>{ console.error(err); toast('Could not build the SQLite file.','err'); });
+      break;
+    }
+    case 'import-sqlite': requireAuth(()=>$('#importSqliteFile').click()); break;
     case 'reset-data': {
       const cn = cur().name;
       requireAuth(()=>confirmModal({
