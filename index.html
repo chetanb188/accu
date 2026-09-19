@@ -547,7 +547,9 @@ window.__setRemoteState = (remote) => {
   if(!remote || JSON.stringify(remote) === JSON.stringify(state)) return;
   if(document.querySelector('.modal-wrap')) return; // don't yank the UI mid-edit
   state = remote;
+  const repaired = repairJournalLines();
   localStorage.setItem(KEY, JSON.stringify(state));
+  if(repaired>0){ window.__fbSave && window.__fbSave(state); }
   render();
 };
 window.__onFbStatus = (status) => {
@@ -569,11 +571,14 @@ const cur = () => (state && state.companies && state.companies.length)
 /* ---------- chart of accounts & the posting engine ---------- */
 const TYPE_LABEL = {asset:'Assets', liability:'Liabilities', equity:'Equity', revenue:'Revenue', expense:'Expenses'};
 
+function normLines(lines){
+  return lines.map(l => ({acc:l.acc, dr:r2(l.dr||0), cr:r2(l.cr||0), memo:l.memo||''}));
+}
 function postEntry({date, ref, memo, lines, linked}){
   const id = 'e' + (cur().seq.entry++);
   cur().journal.push({
     id, n: cur().seq.entry, date, ref: ref||'', memo: memo||'', linked: linked||null,
-    lines: lines.map(l => ({acc:l.acc, dr:r2(l.dr||0), cr:r2(l.cr||0), memo:l.memo||''}))
+    lines: normLines(lines)
   });
   return id;
 }
@@ -1189,9 +1194,9 @@ function openEditPaymentModal(entryId, objId, kind){
     const newDate = $('#epDate').value || todayISO();
     if(newAmt<=0 || newAmt>maxAmt+0.005){ toast('Amount must be between 0 and '+fmt(maxAmt)+'.','warn'); return; }
     entry.date = newDate;
-    entry.lines = kind==='bill'
+    entry.lines = normLines(kind==='bill'
       ? [{acc:AP().id, dr:newAmt},{acc:newAcc, cr:newAmt}]
-      : [{acc:newAcc, dr:newAmt},{acc:AR().id, cr:newAmt}];
+      : [{acc:newAcc, dr:newAmt},{acc:AR().id, cr:newAmt}]);
     obj.paid = r2(otherPaid + newAmt);
     save(); closeAllModals(); render();
     if(kind==='bill') openVendorLedgerModal(obj.vendor); else openCustomerLedgerModal(obj.customer);
@@ -1905,7 +1910,7 @@ function openEntryModal(editId){
       entry.date = $('#jeDate').value||todayISO();
       entry.ref = $('#jeRef').value.trim();
       entry.memo = $('#jeMemo').value.trim();
-      entry.lines = lines;
+      entry.lines = normLines(lines);
       save(); closeModal(w); render();
       toast(`Entry updated \u2014 ${fmt(dr)} on each side of the ledger`);
       return;
@@ -2033,7 +2038,7 @@ function openInvoiceModal(editId){
         const lines = [{acc:AR().id, dr:total}];
         items.forEach(it=>lines.push({acc:it.acc, cr:r2(it.qty*it.price), memo:it.desc||''}));
         if(tax>0) lines.push({acc:TAXACC().id, cr:tax, memo:'Sales tax'});
-        if(entry){ entry.date = date; entry.memo = 'Invoice \u2014 '+party; entry.lines = lines; }
+        if(entry){ entry.date = date; entry.memo = 'Invoice \u2014 '+party; entry.lines = normLines(lines); }
         editObj.customer = party; editObj.date = date; editObj.due = due;
         editObj.items = items; editObj.taxRate = pct; editObj.subtotal = sub; editObj.total = total;
         save(); closeModal(w); render();
@@ -2082,7 +2087,7 @@ function openBillModal(editId){
         const entry = cur().journal.find(e=>e.id===editObj.entryId);
         const lines = items.map(it=>({acc:it.acc, dr:r2(it.qty*it.price), memo:it.desc||''}));
         lines.push({acc:AP().id, cr:sub});
-        if(entry){ entry.date = date; entry.memo = 'Bill \u2014 '+party; entry.lines = lines; }
+        if(entry){ entry.date = date; entry.memo = 'Bill \u2014 '+party; entry.lines = normLines(lines); }
         editObj.vendor = party; editObj.date = date; editObj.due = due;
         editObj.items = items; editObj.total = sub;
         save(); closeModal(w); render();
@@ -2686,6 +2691,19 @@ document.addEventListener('click', e=>{
 });
 
 /* ---------- boot ---------- */
+function repairJournalLines(){
+  let fixed = 0;
+  (state.companies||[]).forEach(c=>{
+    (c.journal||[]).forEach(e=>{
+      e.lines.forEach(l=>{
+        if(typeof l.dr!=='number' || typeof l.cr!=='number' || Number.isNaN(l.dr) || Number.isNaN(l.cr)){
+          l.dr = r2(l.dr||0); l.cr = r2(l.cr||0); fixed++;
+        }
+      });
+    });
+  });
+  return fixed;
+}
 (function boot(){
   const fresh = !localStorage.getItem(KEY);
   if(fresh){ seedData(); }
@@ -2713,6 +2731,8 @@ document.addEventListener('click', e=>{
     }catch(e){ seedData(); }
   }
   if(!state || state.version!==2 || !Array.isArray(state.companies) || !state.companies.length || !cur().accounts) seedData();
+  const repaired = repairJournalLines();
+  if(repaired>0){ save(); toast(repaired+' ledger line'+(repaired>1?'s':'')+' repaired \u2014 balances recalculated'); }
   ui.rep = {from:fyStartISO(), to:todayISO()};
   render();
   if(fresh) toast('Sample books loaded \u2014 seven months of history for '+cur().name);
