@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Book</title>
+<meta name="color-scheme" content="light">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
@@ -56,6 +57,7 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
+  color-scheme: light;
   --paper:#F3EFE4; --card:#FBF8F0; --card-2:#F5F0E2;
   --ink:#22261F; --ink-2:#575C50; --ink-3:#8B8E7E;
   --line:#DED7C3; --line-strong:#C7BFa6;
@@ -268,6 +270,13 @@ tr.jlines td{background:var(--card-2);padding:0}
 .acc-group-head span:first-child{flex:1}
 .acc-group-head .icon-btn{width:22px;height:22px}
 .acc-group .tbl{border-radius:0 0 6px 6px}
+.ac-dropdown{
+  position:absolute; top:100%; left:0; right:0; margin-top:4px; z-index:50;
+  background:#FFFEF9; border:1px solid var(--line-strong); border-radius:7px;
+  box-shadow:0 8px 20px -8px rgba(0,0,0,.25); max-height:180px; overflow-y:auto;
+}
+.ac-item{padding:9px 12px; font-size:13px; color:var(--ink); cursor:pointer;}
+.ac-item:hover, .ac-item.hi{background:var(--card-2)}
 tr.accrow{cursor:pointer}
 
 /* ---------- statements ---------- */
@@ -1082,7 +1091,6 @@ function renderInvoices(){
       `${fmt(out)} outstanding across ${openInv.length} open invoices \u00B7 ${od.length} overdue`,
       `<button class="btn btn-ghost" data-action="view-customer-ledger"><i data-lucide="book-open"></i>Customer ledger</button>
        <button class="btn btn-primary" data-action="new-invoice"><i data-lucide="plus"></i>New invoice</button>`)}
-    <datalist id="custlist">${customers.map(c=>`<option value="${esc(c)}">`).join('')}</datalist>
     <div class="statline">
       <div class="st"><span class="lbl">Outstanding</span><div class="v">${fmt(out)}</div><div class="s">${openInv.length} invoices open</div></div>
       <div class="st ${od.length?'warn':''}"><span class="lbl">Overdue</span><div class="v">${fmt(odSum)}</div><div class="s">${od.length} past due date</div></div>
@@ -1274,7 +1282,6 @@ function renderBills(){
       `${fmt(due)} owed to vendors \u00B7 ${od.length} bill${od.length===1?'':'s'} overdue`,
       `<button class="btn btn-ghost" data-action="view-vendor-ledger"><i data-lucide="book-open"></i>Vendor ledger</button>
        <button class="btn btn-primary" data-action="new-bill"><i data-lucide="plus"></i>New bill</button>`)}
-    <datalist id="vendlist">${[...new Set(cur().bills.map(b=>b.vendor))].map(v=>`<option value="${esc(v)}">`).join('')}</datalist>
     <div class="statline">
       <div class="st"><span class="lbl">Payables outstanding</span><div class="v">${fmt(due)}</div><div class="s">${openB.length} bills open</div></div>
       <div class="st ${od.length?'warn':''}"><span class="lbl">Overdue</span><div class="v">${od.length}</div><div class="s">bills past due date</div></div>
@@ -1933,15 +1940,20 @@ function postPayment(kind, obj, {date, acc, amt}){
   }
   obj.paid = r2(obj.paid+amt);
 }
-function itemModal({title, partyLabel, partyListId, accType, withTax, withPayment, editObj, onSubmit, hint}){
+function itemModal({title, partyLabel, partyNames, accType, withTax, withPayment, editObj, onSubmit, hint}){
   const isEdit = !!editObj;
   if(isEdit) withPayment = false;
+  const names = partyNames || [];
   const w = openModal(`
     <div class="mhead"><h3>${title}</h3><button class="icon-btn" data-action="close-modal"><i data-lucide="x"></i></button></div>
     <form id="docForm">
       <div class="mbody">
         <div class="frow" style="margin-bottom:14px">
-          <div class="field"><label>${partyLabel}</label><input class="inp" id="docParty" list="${partyListId}" placeholder="Name" autocomplete="off" value="${isEdit?esc(editObj.vendor||editObj.customer||''):''}"></div>
+          <div class="field" style="position:relative">
+            <label>${partyLabel}</label>
+            <input class="inp" id="docParty" placeholder="Name" autocomplete="off" value="${isEdit?esc(editObj.vendor||editObj.customer||''):''}">
+            <div id="docPartySuggest" class="ac-dropdown" style="display:none"></div>
+          </div>
           <div class="field" style="flex:0 0 140px"><label>Date</label><input class="inp" type="date" id="docDate" value="${isEdit?editObj.date:todayISO()}"></div>
           <div class="field" style="flex:0 0 140px"><label>Due date</label><input class="inp" type="date" id="docDue" value="${isEdit?editObj.due:addDays(todayISO(),30)}"></div>
         </div>
@@ -2011,12 +2023,27 @@ function itemModal({title, partyLabel, partyListId, accType, withTax, withPaymen
     });
   }
   $('#docForm').onsubmit = ev => { ev.preventDefault(); onSubmit(w, recalc); };
+
+  const partyInp = $('#docParty'), suggestBox = $('#docPartySuggest');
+  function showSuggestions(){
+    const q = partyInp.value.trim().toLowerCase();
+    const matches = names.filter(n => n.toLowerCase().includes(q)).slice(0, 8);
+    if(!matches.length){ suggestBox.style.display = 'none'; return; }
+    suggestBox.innerHTML = matches.map(n=>`<div class="ac-item">${esc(n)}</div>`).join('');
+    suggestBox.style.display = 'block';
+    suggestBox.querySelectorAll('.ac-item').forEach((el,i)=>{
+      el.addEventListener('mousedown', ev=>{ ev.preventDefault(); partyInp.value = matches[i]; suggestBox.style.display='none'; });
+    });
+  }
+  partyInp.addEventListener('focus', showSuggestions);
+  partyInp.addEventListener('input', showSuggestions);
+  partyInp.addEventListener('blur', ()=>{ setTimeout(()=>{ suggestBox.style.display='none'; }, 120); });
 }
 function openInvoiceModal(editId){
   const editObj = editId ? cur().invoices.find(i=>i.id===editId) : null;
   itemModal({
     title: editObj ? 'Edit invoice \u2014 '+editObj.no : 'New invoice',
-    partyLabel:'Customer', partyListId:'custlist', accType:'revenue', withTax:true, withPayment:!editObj, editObj,
+    partyLabel:'Customer', partyNames:customerNames(), accType:'revenue', withTax:true, withPayment:!editObj, editObj,
     hint:'Posting: Dr Accounts Receivable \u00B7 Cr revenue & tax.',
     onSubmit:(w, recalc)=>{
       const party = $('#docParty').value.trim();
@@ -2067,7 +2094,7 @@ function openBillModal(editId){
   const editObj = editId ? cur().bills.find(b=>b.id===editId) : null;
   itemModal({
     title: editObj ? 'Edit bill \u2014 '+editObj.no : 'New bill',
-    partyLabel:'Vendor', partyListId:'vendlist', accType:'expense', withTax:false, withPayment:!editObj, editObj,
+    partyLabel:'Vendor', partyNames:vendorNames(), accType:'expense', withTax:false, withPayment:!editObj, editObj,
     hint:'Posting: Dr expense accounts \u00B7 Cr Accounts Payable.',
     onSubmit:(w, recalc)=>{
       const party = $('#docParty').value.trim();
