@@ -650,9 +650,9 @@ function seedData(){
   const loan=A('2200','Bank Loan','liability');
   const equity=A('3000',"Owner's Equity",'equity');
   const obe=A('3100','Opening Balance Equity','equity',{obe:true});
-  const sales=A('4000','Sales \u2014 Goods','revenue');
+  const sales=A('4000','Sales Account','revenue');
   const services=A('4100','Service Revenue','revenue');
-  const cogs=A('5000','Cost of Goods Sold','expense',{group:'cogs'});
+  const cogs=A('5000','Purchase Account','expense',{group:'cogs'});
   const salaries=A('6000','Salaries & Wages','expense');
   const rent=A('6100','Rent','expense');
   const utilities=A('6200','Utilities','expense');
@@ -835,8 +835,8 @@ function requireAuth(actionFn){
 const NAV = [
   {id:'dashboard', icon:'book-open',      label:'Dashboard'},
   {id:'journal',   icon:'notebook-pen',   label:'Journal'},
-  {id:'invoices',  icon:'file-text',      label:'Invoices'},
-  {id:'bills',     icon:'receipt',        label:'Bills'},
+  {id:'invoices',  icon:'file-text',      label:'Sell Invoice'},
+  {id:'bills',     icon:'receipt',        label:'Purchase Invoice'},
   {id:'accounts',  icon:'list-tree',      label:'Accounts'},
   {id:'reports',   icon:'clipboard-list', label:'Reports'},
   {id:'settings',  icon:'settings',       label:'Settings'}
@@ -995,6 +995,15 @@ function entrySummary(e){
   const names = [...new Set(e.lines.map(l=>{ const a=accById(l.acc); return a.code+' '+a.name; }))];
   return names.slice(0,3).join(' \u00B7 ') + (names.length>3 ? ` +${names.length-3}` : '');
 }
+function isOrphanedEntry(e){
+  if(!e.linked) return false;
+  const idx = e.linked.indexOf(':');
+  const type = e.linked.slice(0,idx), ref = e.linked.slice(idx+1);
+  if(type==='pay') return !cur().bills.some(b=>b.id===ref) && !cur().invoices.some(i=>i.id===ref);
+  if(type==='bill') return !cur().bills.some(b=>'bill:'+b.id===e.linked || 'bill:bl-'+b.no===e.linked);
+  if(type==='inv') return !cur().invoices.some(i=>'inv:'+i.id===e.linked || 'inv:iv-'+i.no===e.linked);
+  return false;
+}
 function renderJournal(){
   const f = ui.journal;
   let list = [...cur().journal].sort((a,b)=> b.date.localeCompare(a.date) || b.n-a.n);
@@ -1034,10 +1043,10 @@ function renderJournal(){
         return `<tr class="jmain ${ui.open[e.id]?'expanded':''}" data-action="toggle-entry" data-id="${e.id}">
           <td class="mono" style="font-size:12px;white-space:nowrap">${fmtDate(e.date)}</td>
           <td><span class="refchip">${esc(e.ref||'\u2014')}</span></td>
-          <td class="cell-memo"><b>${esc(e.memo||'(untitled entry)')}</b><span class="sub">${esc(entrySummary(e))}</span></td>
+          <td class="cell-memo"><b>${esc(e.memo||'(untitled entry)')}</b><span class="sub">${esc(entrySummary(e))}</span>${isOrphanedEntry(e)?' <span style="color:#a63d40;font-size:10px;font-weight:600">\u00B7 ORPHANED (source bill/invoice deleted)</span>':''}</td>
           <td class="num">${fmt(dr)}</td><td class="num">${fmt(cr)}</td>
           <td class="actions">
-            ${!e.linked ? `<button class="icon-btn" title="Edit entry" data-action="edit-entry" data-id="${e.id}"><i data-lucide="pencil"></i></button><button class="icon-btn" title="Delete entry" data-action="del-entry" data-id="${e.id}"><i data-lucide="trash-2"></i></button>`:''}
+            ${(!e.linked || isOrphanedEntry(e)) ? `<button class="icon-btn" title="Edit entry" data-action="edit-entry" data-id="${e.id}"><i data-lucide="pencil"></i></button><button class="icon-btn" title="Delete entry" data-action="del-entry" data-id="${e.id}"><i data-lucide="trash-2"></i></button>`:''}
             <span class="chev"><i data-lucide="chevron-down"></i></span>
           </td></tr>
         <tr class="jlines" id="je-${e.id}" ${ui.open[e.id]?'':'hidden'}><td colspan="6"><div class="jlines-in">
@@ -1064,9 +1073,10 @@ function renderInvoices(){
   const odSum = od.reduce((s,iv)=>s+iv.total-iv.paid,0);
   const customers = [...new Set(cur().invoices.map(i=>i.customer))];
   return `<div class="viewwrap">
-    ${vhead('ACCOUNTS RECEIVABLE','Invoices',
+    ${vhead('ACCOUNTS RECEIVABLE','Sell Invoice',
       `${fmt(out)} outstanding across ${openInv.length} open invoices \u00B7 ${od.length} overdue`,
-      `<button class="btn btn-primary" data-action="new-invoice"><i data-lucide="plus"></i>New invoice</button>`)}
+      `<button class="btn btn-ghost" data-action="view-customer-ledger"><i data-lucide="book-open"></i>Customer ledger</button>
+       <button class="btn btn-primary" data-action="new-invoice"><i data-lucide="plus"></i>New invoice</button>`)}
     <datalist id="custlist">${customers.map(c=>`<option value="${esc(c)}">`).join('')}</datalist>
     <div class="statline">
       <div class="st"><span class="lbl">Outstanding</span><div class="v">${fmt(out)}</div><div class="s">${openInv.length} invoices open</div></div>
@@ -1076,17 +1086,177 @@ function renderInvoices(){
     <div class="tblwrap scrollx"><table class="tbl">
       <thead><tr><th>No</th><th>Customer</th><th>Issued</th><th>Due</th><th>Status</th><th class="th-r">Total</th><th class="th-r">Balance</th><th style="width:76px"></th></tr></thead>
       <tbody>${list.map(iv=>{ const st=invStatus(iv); return `<tr>
-        <td class="mono" style="font-size:12px">${iv.no}</td><td><b>${esc(iv.customer)}</b></td>
+        <td class="mono" style="font-size:12px">${iv.no}</td><td><b class="link" data-action="view-customer-ledger" data-id="${esc(iv.customer)}" style="cursor:pointer;text-decoration:underline dotted">${esc(iv.customer)}</b></td>
         <td class="mono" style="font-size:12px;white-space:nowrap">${fmtDate(iv.date)}</td>
         <td class="mono" style="font-size:12px;white-space:nowrap">${fmtDate(iv.due)}</td>
         <td>${chip(st)}</td><td class="num">${fmt(iv.total)}</td>
         <td class="num">${st==='paid'?'<span style="color:var(--ink-3)">\u2014</span>':fmt(iv.total-iv.paid)}</td>
         <td class="actions">
           <button class="icon-btn" title="View invoice" data-action="view-invoice" data-id="${iv.id}"><i data-lucide="eye"></i></button>
+          <button class="icon-btn" title="Edit invoice" data-action="edit-invoice" data-id="${iv.id}"><i data-lucide="pencil"></i></button>
           ${st!=='paid'?`<button class="icon-btn" title="Record payment" data-action="pay-invoice" data-id="${iv.id}"><i data-lucide="banknote"></i></button>`:''}
         </td></tr>`; }).join('')}
       </tbody></table></div>
   </div>`;
+}
+function customerNames(){ return [...new Set(cur().invoices.map(i=>i.customer))].sort((a,b)=>a.localeCompare(b)); }
+function customerLedgerRows(customerName){
+  const invs = cur().invoices.filter(i=>i.customer===customerName).sort((a,b)=> a.date.localeCompare(b.date) || a.no.localeCompare(b.no));
+  const rows = [];
+  invs.forEach(iv=>{
+    rows.push({date:iv.date, ref:iv.no, particulars:'Invoice \u2014 '+(iv.items[0]?iv.items[0].desc:'Sale'), dr:iv.total, cr:0, sortKey:iv.date+'_0_'+iv.no});
+    cur().journal.filter(e=>e.linked==='pay:'+iv.id).forEach(e=>{
+      const line = e.lines.find(l=>l.cr>0);
+      rows.push({date:e.date, ref:e.ref||('RCT-'+iv.no), particulars:'Receipt against '+iv.no, dr:0, cr:line?line.cr:0, sortKey:e.date+'_1_'+iv.no, isPayment:true, entryId:e.id, objId:iv.id});
+    });
+  });
+  rows.sort((a,b)=>a.sortKey.localeCompare(b.sortKey));
+  let bal = 0;
+  rows.forEach(r=>{ bal = r2(bal + r.dr - r.cr); r.bal = bal; });
+  const totalBilled = r2(invs.reduce((s,i)=>s+i.total,0));
+  const totalReceived = r2(invs.reduce((s,i)=>s+i.paid,0));
+  return { rows, totalBilled, totalReceived, balance: r2(totalBilled-totalReceived) };
+}
+function ledgerRowActionsHtml(r, kind){
+  if(!r.isPayment) return '';
+  return `<button class="icon-btn" title="Edit" data-action="edit-payment" data-entry="${r.entryId}" data-obj="${r.objId}" data-kind="${kind}" style="width:24px;height:24px"><i data-lucide="pencil"></i></button>
+    <button class="icon-btn" title="Delete" data-action="del-payment" data-entry="${r.entryId}" data-obj="${r.objId}" data-kind="${kind}" style="width:24px;height:24px"><i data-lucide="trash-2"></i></button>`;
+}
+function customerLedgerBody(customer){
+  const names = customerNames();
+  const {rows, totalBilled, totalReceived, balance} = customerLedgerRows(customer);
+  return `
+    <div class="mhead"><h3>Customer ledger</h3><button class="icon-btn" data-action="close-modal"><i data-lucide="x"></i></button></div>
+    <div class="mbody scroll">
+      <div class="frow" style="margin-bottom:14px">
+        <div class="field"><label>Customer</label><select class="inp" id="clCustomer">${names.map(n=>`<option value="${esc(n)}" ${n===customer?'selected':''}>${esc(n)}</option>`).join('')}</select></div>
+      </div>
+      <div class="frow" style="margin-bottom:16px;gap:10px">
+        <div class="st" style="flex:1"><span class="lbl">Total invoiced</span><div class="v">${fmt(totalBilled)}</div></div>
+        <div class="st" style="flex:1"><span class="lbl">Total received</span><div class="v">${fmt(totalReceived)}</div></div>
+        <div class="st" style="flex:1"><span class="lbl">Balance due</span><div class="v" style="color:${balance>0.004?'#a63d40':'#3f7d4f'}">${fmt(balance)}</div></div>
+      </div>
+      <table class="tbl"><thead><tr><th>Date</th><th>Ref</th><th>Particulars</th><th class="th-r">Debit</th><th class="th-r">Credit</th><th class="th-r">Balance</th><th style="width:64px"></th></tr></thead>
+      <tbody>${rows.length ? rows.map(r=>`<tr><td class="mono" style="font-size:12px;white-space:nowrap">${fmtDate(r.date)}</td><td class="mono" style="font-size:12px">${esc(r.ref)}</td><td>${esc(r.particulars)}</td>
+        <td class="num">${r.dr?fmt(r.dr):''}</td><td class="num">${r.cr?fmt(r.cr):''}</td><td class="num">${fmt(r.bal)}</td><td class="actions">${ledgerRowActionsHtml(r,'invoice')}</td></tr>`).join('') : '<tr><td colspan="7" class="empty">No transactions.</td></tr>'}</tbody></table>
+    </div>`;
+}
+function openCustomerLedgerModal(preselect){
+  const names = customerNames();
+  if(!names.length){ toast('No customer invoices yet.','warn'); return; }
+  const customer = (preselect && names.includes(preselect)) ? preselect : names[0];
+  const w = openModal(customerLedgerBody(customer), {w:760});
+  const bind = () => {
+    w.querySelector('#clCustomer').addEventListener('change', e=>{
+      w.querySelector('.modal').innerHTML = customerLedgerBody(e.target.value);
+      refreshIcons(); bind();
+    });
+  };
+  bind();
+}
+function findPaymentAmount(entry, kind){
+  if(kind==='bill'){ const l = entry.lines.find(l=>l.acc===AP().id); return l ? (l.dr||0) : 0; }
+  const l = entry.lines.find(l=>l.acc===AR().id); return l ? (l.cr||0) : 0;
+}
+function getPaymentAccId(entry, kind){
+  const ctrl = kind==='bill' ? AP().id : AR().id;
+  const l = entry.lines.find(l=>l.acc!==ctrl); return l ? l.acc : '';
+}
+function openEditPaymentModal(entryId, objId, kind){
+  const entry = cur().journal.find(e=>e.id===entryId); if(!entry) return;
+  const obj = (kind==='bill'?cur().bills:cur().invoices).find(x=>x.id===objId); if(!obj) return;
+  const oldAmt = findPaymentAmount(entry, kind);
+  const oldAcc = getPaymentAccId(entry, kind);
+  const otherPaid = r2(obj.paid - oldAmt);
+  const maxAmt = r2(obj.total - otherPaid);
+  const partyName = kind==='bill' ? obj.vendor : obj.customer;
+  const w = openModal(`
+    <div class="mhead"><h3>Edit ${kind==='bill'?'payment':'receipt'} \u2014 ${obj.no}</h3><button class="icon-btn" data-action="close-modal"><i data-lucide="x"></i></button></div>
+    <form id="epForm"><div class="mbody">
+      <div class="kv" style="margin-bottom:16px"><span>${esc(partyName)}</span><b>Max ${fmt(maxAmt)}</b></div>
+      <div class="frow">
+        <div class="field" style="flex:0 0 140px"><label>Date</label><input class="inp" type="date" id="epDate" value="${entry.date}"></div>
+        <div class="field"><label>${kind==='bill'?'Pay from':'Deposit to'}</label><select class="inp" id="epAcc">${cashAccounts().map(a=>`<option value="${a.id}" ${a.id===oldAcc?'selected':''}>${a.code} \u00B7 ${esc(a.name)}</option>`).join('')}</select></div>
+        <div class="field" style="flex:0 0 160px"><label>Amount</label><input class="inp" id="epAmt" type="number" min="0" step="any" value="${oldAmt}" style="text-align:right;font-family:'IBM Plex Mono'"></div>
+      </div>
+      <div class="mfoot"><button type="button" class="btn btn-ghost" data-action="close-modal">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i data-lucide="check"></i>Save changes</button></div>
+    </div></form>`, {w:560});
+  $('#epForm').onsubmit = ev=>{
+    ev.preventDefault();
+    const newAmt = r2(num($('#epAmt').value));
+    const newAcc = $('#epAcc').value;
+    const newDate = $('#epDate').value || todayISO();
+    if(newAmt<=0 || newAmt>maxAmt+0.005){ toast('Amount must be between 0 and '+fmt(maxAmt)+'.','warn'); return; }
+    entry.date = newDate;
+    entry.lines = kind==='bill'
+      ? [{acc:AP().id, dr:newAmt},{acc:newAcc, cr:newAmt}]
+      : [{acc:newAcc, dr:newAmt},{acc:AR().id, cr:newAmt}];
+    obj.paid = r2(otherPaid + newAmt);
+    save(); closeAllModals(); render();
+    if(kind==='bill') openVendorLedgerModal(obj.vendor); else openCustomerLedgerModal(obj.customer);
+    toast('Payment updated');
+  };
+}
+function deletePayment(entryId, objId, kind){
+  const entry = cur().journal.find(e=>e.id===entryId); if(!entry) return;
+  const obj = (kind==='bill'?cur().bills:cur().invoices).find(x=>x.id===objId); if(!obj) return;
+  const amt = findPaymentAmount(entry, kind);
+  cur().journal = cur().journal.filter(e=>e.id!==entryId);
+  obj.paid = r2(obj.paid - amt);
+  save(); closeAllModals(); render();
+  if(kind==='bill') openVendorLedgerModal(obj.vendor); else openCustomerLedgerModal(obj.customer);
+  toast('Payment deleted');
+}
+function vendorNames(){ return [...new Set(cur().bills.map(b=>b.vendor))].sort((a,b)=>a.localeCompare(b)); }
+function vendorLedgerRows(vendorName){
+  const bills = cur().bills.filter(b=>b.vendor===vendorName).sort((a,b)=> a.date.localeCompare(b.date) || a.no.localeCompare(b.no));
+  const rows = [];
+  bills.forEach(b=>{
+    rows.push({date:b.date, ref:b.no, particulars:'Bill \u2014 '+(b.items[0]?b.items[0].desc:'Purchase'), dr:0, cr:b.total, sortKey:b.date+'_0_'+b.no});
+    cur().journal.filter(e=>e.linked==='pay:'+b.id).forEach(e=>{
+      const line = e.lines.find(l=>l.dr>0);
+      rows.push({date:e.date, ref:e.ref||('PAY-'+b.no), particulars:'Payment against '+b.no, dr:line?line.dr:0, cr:0, sortKey:e.date+'_1_'+b.no, isPayment:true, entryId:e.id, objId:b.id});
+    });
+  });
+  rows.sort((a,b)=>a.sortKey.localeCompare(b.sortKey));
+  let bal = 0;
+  rows.forEach(r=>{ bal = r2(bal + r.cr - r.dr); r.bal = bal; });
+  const totalBilled = r2(bills.reduce((s,b)=>s+b.total,0));
+  const totalPaid = r2(bills.reduce((s,b)=>s+b.paid,0));
+  return { rows, totalBilled, totalPaid, balance: r2(totalBilled-totalPaid) };
+}
+function vendorLedgerBody(vendor){
+  const names = vendorNames();
+  const {rows, totalBilled, totalPaid, balance} = vendorLedgerRows(vendor);
+  return `
+    <div class="mhead"><h3>Vendor ledger</h3><button class="icon-btn" data-action="close-modal"><i data-lucide="x"></i></button></div>
+    <div class="mbody scroll">
+      <div class="frow" style="margin-bottom:14px">
+        <div class="field"><label>Vendor</label><select class="inp" id="vlVendor">${names.map(n=>`<option value="${esc(n)}" ${n===vendor?'selected':''}>${esc(n)}</option>`).join('')}</select></div>
+      </div>
+      <div class="frow" style="margin-bottom:16px;gap:10px">
+        <div class="st" style="flex:1"><span class="lbl">Total billed</span><div class="v">${fmt(totalBilled)}</div></div>
+        <div class="st" style="flex:1"><span class="lbl">Total paid</span><div class="v">${fmt(totalPaid)}</div></div>
+        <div class="st" style="flex:1"><span class="lbl">Balance due</span><div class="v" style="color:${balance>0.004?'#a63d40':'#3f7d4f'}">${fmt(balance)}</div></div>
+      </div>
+      <table class="tbl"><thead><tr><th>Date</th><th>Ref</th><th>Particulars</th><th class="th-r">Debit</th><th class="th-r">Credit</th><th class="th-r">Balance</th><th style="width:64px"></th></tr></thead>
+      <tbody>${rows.length ? rows.map(r=>`<tr><td class="mono" style="font-size:12px;white-space:nowrap">${fmtDate(r.date)}</td><td class="mono" style="font-size:12px">${esc(r.ref)}</td><td>${esc(r.particulars)}</td>
+        <td class="num">${r.dr?fmt(r.dr):''}</td><td class="num">${r.cr?fmt(r.cr):''}</td><td class="num">${fmt(r.bal)}</td><td class="actions">${ledgerRowActionsHtml(r,'bill')}</td></tr>`).join('') : '<tr><td colspan="7" class="empty">No transactions.</td></tr>'}</tbody></table>
+    </div>`;
+}
+function openVendorLedgerModal(preselect){
+  const names = vendorNames();
+  if(!names.length){ toast('No vendor bills yet.','warn'); return; }
+  const vendor = (preselect && names.includes(preselect)) ? preselect : names[0];
+  const w = openModal(vendorLedgerBody(vendor), {w:760});
+  const bind = () => {
+    w.querySelector('#vlVendor').addEventListener('change', e=>{
+      w.querySelector('.modal').innerHTML = vendorLedgerBody(e.target.value);
+      refreshIcons(); bind();
+    });
+  };
+  bind();
 }
 function renderBills(){
   const t = todayISO();
@@ -1095,24 +1265,26 @@ function renderBills(){
   const due = openB.reduce((s,b)=>s+b.total-b.paid,0);
   const od = openB.filter(b=>billStatus(b)==='overdue');
   return `<div class="viewwrap">
-    ${vhead('ACCOUNTS PAYABLE','Bills',
+    ${vhead('ACCOUNTS PAYABLE','Purchase Invoice',
       `${fmt(due)} owed to vendors \u00B7 ${od.length} bill${od.length===1?'':'s'} overdue`,
-      `<button class="btn btn-primary" data-action="new-bill"><i data-lucide="plus"></i>New bill</button>`)}
+      `<button class="btn btn-ghost" data-action="view-vendor-ledger"><i data-lucide="book-open"></i>Vendor ledger</button>
+       <button class="btn btn-primary" data-action="new-bill"><i data-lucide="plus"></i>New bill</button>`)}
     <datalist id="vendlist">${[...new Set(cur().bills.map(b=>b.vendor))].map(v=>`<option value="${esc(v)}">`).join('')}</datalist>
     <div class="statline">
       <div class="st"><span class="lbl">Payables outstanding</span><div class="v">${fmt(due)}</div><div class="s">${openB.length} bills open</div></div>
       <div class="st ${od.length?'warn':''}"><span class="lbl">Overdue</span><div class="v">${od.length}</div><div class="s">bills past due date</div></div>
-      <div class="st"><span class="lbl">Bills on file</span><div class="v">${list.length}</div><div class="s">all time</div></div>
+      <div class="st"><span class="lbl">Purchase invoices on file</span><div class="v">${list.length}</div><div class="s">all time</div></div>
     </div>
     <div class="tblwrap scrollx"><table class="tbl">
       <thead><tr><th>No</th><th>Vendor</th><th>Date</th><th>Due</th><th>Status</th><th class="th-r">Total</th><th class="th-r">Balance</th><th style="width:76px"></th></tr></thead>
       <tbody>${list.map(b=>{ const st=billStatus(b); return `<tr>
-        <td class="mono" style="font-size:12px">${b.no}</td><td><b>${esc(b.vendor)}</b></td>
+        <td class="mono" style="font-size:12px">${b.no}</td><td><b class="link" data-action="view-vendor-ledger" data-id="${esc(b.vendor)}" style="cursor:pointer;text-decoration:underline dotted">${esc(b.vendor)}</b></td>
         <td class="mono" style="font-size:12px;white-space:nowrap">${fmtDate(b.date)}</td>
         <td class="mono" style="font-size:12px;white-space:nowrap">${fmtDate(b.due)}</td>
         <td>${chip(st)}</td><td class="num">${fmt(b.total)}</td>
         <td class="num">${st==='paid'?'<span style="color:var(--ink-3)">\u2014</span>':fmt(b.total-b.paid)}</td>
         <td class="actions">
+          <button class="icon-btn" title="Edit bill" data-action="edit-bill" data-id="${b.id}"><i data-lucide="pencil"></i></button>
           ${st!=='paid'?`<button class="icon-btn" title="Pay bill" data-action="pay-bill" data-id="${b.id}"><i data-lucide="banknote"></i></button>
           <button class="icon-btn" title="Void bill" data-action="del-bill" data-id="${b.id}"><i data-lucide="trash-2"></i></button>`:''}
         </td></tr>`; }).join('')}
@@ -1453,7 +1625,7 @@ function renderSettings(){
         <div class="card set-card" style="margin-bottom:18px">
           <h3>The books</h3><p class="sub">Everything lives in your browser \u2014 nothing leaves this machine.</p>
           <div class="kv"><span>Journal entries</span><b>${cur().journal.length}</b></div>
-          <div class="kv"><span>Invoices on file</span><b>${cur().invoices.length}</b></div>
+          <div class="kv"><span>Sell invoices on file</span><b>${cur().invoices.length}</b></div>
           <div class="kv"><span>Vendor bills</span><b>${cur().bills.length}</b></div>
           <div class="kv"><span>Accounts</span><b>${cur().accounts.length}</b></div>
           <div class="kv"><span>Companies in workspace</span><b>${state.companies.length}</b></div>
@@ -1465,6 +1637,7 @@ function renderSettings(){
             <button class="btn btn-ghost" data-action="export-sqlite"><i data-lucide="database"></i>Export as SQLite (.sqlite)</button>
             <button class="btn btn-ghost" data-action="import-sqlite"><i data-lucide="database-backup"></i>Import from SQLite</button>
             <button class="btn btn-ghost" data-action="open-companies"><i data-lucide="building-2"></i>Manage companies</button>
+            <button class="btn btn-ghost" data-action="add-tally-accounts"><i data-lucide="library"></i>Add Purchase/Sales Account (Tally-style)</button>
           </div>
           <input type="file" id="importFile" accept="application/json,.json" style="display:none">
           <input type="file" id="importSqliteFile" accept=".sqlite,.db,.sqlite3,application/x-sqlite3" style="display:none">
@@ -1744,15 +1917,28 @@ function openEntryModal(editId){
 }
 
 /* ---------- modals: invoices / bills ---------- */
-function itemModal({title, partyLabel, partyListId, accType, withTax, onSubmit, hint}){
+function postPayment(kind, obj, {date, acc, amt}){
+  const isInv = kind==='invoice';
+  if(isInv){
+    postEntry({date, ref:'RCT-'+obj.no, memo:'Payment received \u2014 '+obj.customer,
+      lines:[{acc, dr:amt},{acc:AR().id, cr:amt}], linked:'pay:'+obj.id});
+  } else {
+    postEntry({date, ref:'PAY-'+obj.no, memo:'Payment \u2014 '+obj.vendor,
+      lines:[{acc:AP().id, dr:amt},{acc, cr:amt}], linked:'pay:'+obj.id});
+  }
+  obj.paid = r2(obj.paid+amt);
+}
+function itemModal({title, partyLabel, partyListId, accType, withTax, withPayment, editObj, onSubmit, hint}){
+  const isEdit = !!editObj;
+  if(isEdit) withPayment = false;
   const w = openModal(`
     <div class="mhead"><h3>${title}</h3><button class="icon-btn" data-action="close-modal"><i data-lucide="x"></i></button></div>
     <form id="docForm">
       <div class="mbody">
         <div class="frow" style="margin-bottom:14px">
-          <div class="field"><label>${partyLabel}</label><input class="inp" id="docParty" list="${partyListId}" placeholder="Name" autocomplete="off"></div>
-          <div class="field" style="flex:0 0 140px"><label>Date</label><input class="inp" type="date" id="docDate" value="${todayISO()}"></div>
-          <div class="field" style="flex:0 0 140px"><label>Due date</label><input class="inp" type="date" id="docDue" value="${addDays(todayISO(),30)}"></div>
+          <div class="field"><label>${partyLabel}</label><input class="inp" id="docParty" list="${partyListId}" placeholder="Name" autocomplete="off" value="${isEdit?esc(editObj.vendor||editObj.customer||''):''}"></div>
+          <div class="field" style="flex:0 0 140px"><label>Date</label><input class="inp" type="date" id="docDate" value="${isEdit?editObj.date:todayISO()}"></div>
+          <div class="field" style="flex:0 0 140px"><label>Due date</label><input class="inp" type="date" id="docDue" value="${isEdit?editObj.due:addDays(todayISO(),30)}"></div>
         </div>
         <div class="item-grid item-h"><span>Description</span><span style="text-align:right">Qty</span><span style="text-align:right">Rate</span><span class="item-acc-c">Account</span><span style="text-align:right">Amount</span><span></span></div>
         <div id="itemRows"></div>
@@ -1760,20 +1946,25 @@ function itemModal({title, partyLabel, partyListId, accType, withTax, onSubmit, 
         <div class="totbox">
           <div class="srow"><span class="n">Subtotal</span><span class="num" id="tSub">${fmt(0)}</span></div>
           ${withTax?`<div class="srow"><span class="n">Tax
-            <input class="inp" id="tTaxPct" type="number" min="0" step="any" value="0" style="width:64px;padding:3px 7px;font-size:12px;margin-left:8px">%</span>
+            <input class="inp" id="tTaxPct" type="number" min="0" step="any" value="${isEdit?(editObj.taxRate||0):0}" style="width:64px;padding:3px 7px;font-size:12px;margin-left:8px">%</span>
             <span class="num" id="tTax">${fmt(0)}</span></div>`:''}
           <div class="srow total"><span class="n">Total</span><span class="num" id="tTot">${fmt(0)}</span></div>
         </div>
+        ${withPayment?`<div class="frow" style="margin-top:16px;padding-top:14px;border-top:1px dashed var(--line)">
+          <div class="field" style="flex:0 0 160px"><label>${accType==='revenue'?'Received now':'Paid now'}</label><input class="inp" id="docPaidNow" type="number" min="0" step="any" value="0" style="text-align:right;font-family:'IBM Plex Mono'"></div>
+          <div class="field" id="docPayAccW" style="display:none"><label>${accType==='revenue'?'Deposit to':'Pay from'}</label><select class="inp" id="docPayAcc">${cashAccounts().map(a=>`<option value="${a.id}">${a.code} \u00B7 ${esc(a.name)}</option>`).join('')}</select></div>
+        </div>`:''}
+        ${isEdit && editObj.paid>0.004 ? `<p style="font-size:12px;color:var(--ink-3);margin-top:12px">${fmt(editObj.paid)} already ${accType==='revenue'?'received':'paid'} against this \u2014 the total can\u2019t be reduced below that.</p>`:''}
       </div>
       <div class="mbody" style="padding-top:0">
         <div class="mfoot"><span class="hint">${hint}</span>
           <button type="button" class="btn btn-ghost" data-action="close-modal">Cancel</button>
-          <button type="submit" class="btn btn-primary" id="docCreate"><i data-lucide="check"></i>${title==='New invoice'?'Create invoice':'Record bill'}</button>
+          <button type="submit" class="btn btn-primary" id="docCreate"><i data-lucide="check"></i>${isEdit?'Save changes':(title==='New invoice'?'Create invoice':'Record bill')}</button>
         </div>
       </div>
     </form>`, {w:840});
   const rows = $('#itemRows');
-  function addItem(){
+  function addItem(prefill){
     const rw = document.createElement('div');
     rw.className = 'item-grid item-row';
     rw.innerHTML = `<input class="inp i-desc" placeholder="Description">
@@ -1782,6 +1973,12 @@ function itemModal({title, partyLabel, partyListId, accType, withTax, onSubmit, 
       <select class="inp i-acc item-acc-c">${typeAccOptions(accType)}</select>
       <span class="item-amt">${fmt(0)}</span>
       <button type="button" class="icon-btn i-rm"><i data-lucide="x"></i></button>`;
+    if(prefill){
+      rw.querySelector('.i-desc').value = prefill.desc||'';
+      rw.querySelector('.i-qty').value = prefill.qty;
+      rw.querySelector('.i-rate').value = prefill.price;
+      rw.querySelector('.i-acc').value = prefill.acc;
+    }
     rw.querySelector('.i-rm').onclick = ()=>{ rw.remove(); recalc(); };
     rows.appendChild(rw); refreshIcons(); recalc();
   }
@@ -1799,14 +1996,22 @@ function itemModal({title, partyLabel, partyListId, accType, withTax, onSubmit, 
     $('#tTot').textContent = fmt(r2(sub+tax));
     return {sub, tax, pct};
   }
-  $('#itemAdd').onclick = addItem;
-  addItem();
+  $('#itemAdd').onclick = ()=>addItem();
+  if(isEdit && editObj.items && editObj.items.length) editObj.items.forEach(it=>addItem(it));
+  else addItem();
   $('#docForm').addEventListener('input', recalc);
+  if(withPayment){
+    $('#docPaidNow').addEventListener('input', e=>{
+      $('#docPayAccW').style.display = num(e.target.value)>0 ? '' : 'none';
+    });
+  }
   $('#docForm').onsubmit = ev => { ev.preventDefault(); onSubmit(w, recalc); };
 }
-function openInvoiceModal(){
+function openInvoiceModal(editId){
+  const editObj = editId ? cur().invoices.find(i=>i.id===editId) : null;
   itemModal({
-    title:'New invoice', partyLabel:'Customer', partyListId:'custlist', accType:'revenue', withTax:true,
+    title: editObj ? 'Edit invoice \u2014 '+editObj.no : 'New invoice',
+    partyLabel:'Customer', partyListId:'custlist', accType:'revenue', withTax:true, withPayment:!editObj, editObj,
     hint:'Posting: Dr Accounts Receivable \u00B7 Cr revenue & tax.',
     onSubmit:(w, recalc)=>{
       const party = $('#docParty').value.trim();
@@ -1819,22 +2024,45 @@ function openInvoiceModal(){
       if(!party){ toast('Who is this invoice for?','warn'); return; }
       if(!items.length){ toast('Add at least one line with a quantity and account.','warn'); return; }
       const {sub, tax, pct} = recalc();
-      const no = 'INV-'+pad(cur().seq.inv++,3);
       const total = r2(sub+tax);
+      const date = $('#docDate').value||todayISO(), due = $('#docDue').value||addDays(date,30);
+
+      if(editObj){
+        if(total < editObj.paid - 0.005){ toast('Total can\u2019t be less than '+fmt(editObj.paid)+' already received.','warn'); return; }
+        const entry = cur().journal.find(e=>e.id===editObj.entryId);
+        const lines = [{acc:AR().id, dr:total}];
+        items.forEach(it=>lines.push({acc:it.acc, cr:r2(it.qty*it.price), memo:it.desc||''}));
+        if(tax>0) lines.push({acc:TAXACC().id, cr:tax, memo:'Sales tax'});
+        if(entry){ entry.date = date; entry.memo = 'Invoice \u2014 '+party; entry.lines = lines; }
+        editObj.customer = party; editObj.date = date; editObj.due = due;
+        editObj.items = items; editObj.taxRate = pct; editObj.subtotal = sub; editObj.total = total;
+        save(); closeModal(w); render();
+        toast(`Invoice ${editObj.no} updated`);
+        return;
+      }
+
+      const no = 'INV-'+pad(cur().seq.inv++,3);
       const lines = [{acc:AR().id, dr:total}];
       items.forEach(it=>lines.push({acc:it.acc, cr:r2(it.qty*it.price), memo:it.desc||''}));
       if(tax>0) lines.push({acc:TAXACC().id, cr:tax, memo:'Sales tax'});
-      const date = $('#docDate').value||todayISO(), due = $('#docDue').value||addDays(date,30);
       const eid = postEntry({date, ref:no, memo:'Invoice \u2014 '+party, lines, linked:'inv:iv-'+no});
-      cur().invoices.push({id:'iv-'+no, no, customer:party, date, due, items, taxRate:pct, subtotal:sub, total, paid:0, entryId:eid});
+      const iv = {id:'iv-'+no, no, customer:party, date, due, items, taxRate:pct, subtotal:sub, total, paid:0, entryId:eid};
+      cur().invoices.push(iv);
+      const paidNow = r2(num($('#docPaidNow')?.value||0));
+      if(paidNow>0.004){
+        const payAcc = $('#docPayAcc').value;
+        postPayment('invoice', iv, {date, acc:payAcc, amt:Math.min(paidNow,total)});
+      }
       save(); closeModal(w); render();
-      toast(`Invoice ${no} created \u2014 ${fmt(total)} posted to receivables`);
+      toast(`Invoice ${no} created \u2014 ${fmt(total)} posted to receivables`+(paidNow>0.004?`, ${fmt(Math.min(paidNow,total))} received now`:''));
     }
   });
 }
-function openBillModal(){
+function openBillModal(editId){
+  const editObj = editId ? cur().bills.find(b=>b.id===editId) : null;
   itemModal({
-    title:'New bill', partyLabel:'Vendor', partyListId:'vendlist', accType:'expense', withTax:false,
+    title: editObj ? 'Edit bill \u2014 '+editObj.no : 'New bill',
+    partyLabel:'Vendor', partyListId:'vendlist', accType:'expense', withTax:false, withPayment:!editObj, editObj,
     hint:'Posting: Dr expense accounts \u00B7 Cr Accounts Payable.',
     onSubmit:(w, recalc)=>{
       const party = $('#docParty').value.trim();
@@ -1847,14 +2075,34 @@ function openBillModal(){
       if(!party){ toast('Which vendor is this bill from?','warn'); return; }
       if(!items.length){ toast('Add at least one line with a quantity and account.','warn'); return; }
       const {sub} = recalc();
+      const date = $('#docDate').value||todayISO(), due = $('#docDue').value||addDays(date,30);
+
+      if(editObj){
+        if(sub < editObj.paid - 0.005){ toast('Total can\u2019t be less than '+fmt(editObj.paid)+' already paid.','warn'); return; }
+        const entry = cur().journal.find(e=>e.id===editObj.entryId);
+        const lines = items.map(it=>({acc:it.acc, dr:r2(it.qty*it.price), memo:it.desc||''}));
+        lines.push({acc:AP().id, cr:sub});
+        if(entry){ entry.date = date; entry.memo = 'Bill \u2014 '+party; entry.lines = lines; }
+        editObj.vendor = party; editObj.date = date; editObj.due = due;
+        editObj.items = items; editObj.total = sub;
+        save(); closeModal(w); render();
+        toast(`Bill ${editObj.no} updated`);
+        return;
+      }
+
       const no = 'BILL-'+pad(cur().seq.bill++,3);
       const lines = items.map(it=>({acc:it.acc, dr:r2(it.qty*it.price), memo:it.desc||''}));
       lines.push({acc:AP().id, cr:sub});
-      const date = $('#docDate').value||todayISO(), due = $('#docDue').value||addDays(date,30);
       const eid = postEntry({date, ref:no, memo:'Bill \u2014 '+party, lines, linked:'bill:bl-'+no});
-      cur().bills.push({id:'bl-'+no, no, vendor:party, date, due, items, total:sub, paid:0, entryId:eid});
+      const bl = {id:'bl-'+no, no, vendor:party, date, due, items, total:sub, paid:0, entryId:eid};
+      cur().bills.push(bl);
+      const paidNow = r2(num($('#docPaidNow')?.value||0));
+      if(paidNow>0.004){
+        const payAcc = $('#docPayAcc').value;
+        postPayment('bill', bl, {date, acc:payAcc, amt:Math.min(paidNow,sub)});
+      }
       save(); closeModal(w); render();
-      toast(`Bill ${no} recorded \u2014 ${fmt(sub)} now payable`);
+      toast(`Bill ${no} recorded \u2014 ${fmt(sub)} now payable`+(paidNow>0.004?`, ${fmt(Math.min(paidNow,sub))} paid now`:''));
     }
   });
 }
@@ -1882,15 +2130,7 @@ function openPaymentModal(kind, id){
     const amt = r2(num($('#payAmt').value));
     if(amt<=0 || amt>due+0.005){ toast('Amount must be between 0 and the balance due.','warn'); return; }
     const acc = $('#payAcc').value, date = $('#payDate').value||todayISO();
-    if(isInv){
-      postEntry({date, ref:'RCT-'+obj.no, memo:'Payment received \u2014 '+obj.customer,
-        lines:[{acc, dr:amt},{acc:AR().id, cr:amt}], linked:'pay:'+obj.id});
-      obj.paid = r2(obj.paid+amt);
-    } else {
-      postEntry({date, ref:'PAY-'+obj.no, memo:'Payment \u2014 '+obj.vendor,
-        lines:[{acc:AP().id, dr:amt},{acc, cr:amt}], linked:'pay:'+obj.id});
-      obj.paid = r2(obj.paid+amt);
-    }
+    postPayment(kind, obj, {date, acc, amt});
     save(); closeAllModals(); render();
     toast(`${fmt(amt)} recorded against ${obj.no}`);
   };
@@ -2048,6 +2288,23 @@ function openAccountModal(editId){
 
 /* ---------- modals: company switcher + new company ---------- */
 /* default chart of accounts handed to any freshly created company */
+function ensureTallyAccounts(){
+  const accs = cur().accounts;
+  const nextCode = (start) => { let c = start; while(accs.some(a=>a.code===String(c))) c += 10; return String(c); };
+  const added = [];
+  if(!accs.some(a=>a.name.toLowerCase()==='sales account')){
+    const code = nextCode(4000);
+    accs.push({id:'a'+code+'-'+Math.random().toString(36).slice(2,5), code, name:'Sales Account', type:'revenue', normalDebit:false});
+    added.push('Sales Account');
+  }
+  if(!accs.some(a=>a.name.toLowerCase()==='purchase account')){
+    const code = nextCode(5000);
+    accs.push({id:'a'+code+'-'+Math.random().toString(36).slice(2,5), code, name:'Purchase Account', type:'expense', normalDebit:true, group:'cogs'});
+    added.push('Purchase Account');
+  }
+  if(added.length){ save(); render(); toast(added.join(' & ')+' added to the chart'); }
+  else toast('Both accounts already exist');
+}
 function defaultChartOfAccounts(){
   const A = (code,name,type,extra={}) => ({id:'a'+code+'-'+Math.random().toString(36).slice(2,5), code, name, type,
     normalDebit:(type==='asset'||type==='expense'), ...extra});
@@ -2062,9 +2319,9 @@ function defaultChartOfAccounts(){
     A('2200','Bank Loan','liability'),
     A('3000',"Owner's Equity",'equity'),
     A('3100','Opening Balance Equity','equity',{obe:true}),
-    A('4000','Sales \u2014 Goods','revenue'),
+    A('4000','Sales Account','revenue'),
     A('4100','Service Revenue','revenue'),
-    A('5000','Cost of Goods Sold','expense',{group:'cogs'}),
+    A('5000','Purchase Account','expense',{group:'cogs'}),
     A('6000','Salaries & Wages','expense'),
     A('6100','Rent','expense'),
     A('6200','Utilities','expense'),
@@ -2268,8 +2525,22 @@ document.addEventListener('click', e=>{
     case 'new-entry': openEntryModal(); break;
     case 'edit-entry': requireAuth(()=>openEntryModal(id)); break;
     case 'new-invoice': openInvoiceModal(); break;
+    case 'edit-invoice': requireAuth(()=>openInvoiceModal(id)); break;
+    case 'view-customer-ledger': openCustomerLedgerModal(id); break;
+    case 'edit-payment': requireAuth(()=>openEditPaymentModal(t.dataset.entry, t.dataset.obj, t.dataset.kind)); break;
+    case 'del-payment': requireAuth(()=>{
+      const entryId = t.dataset.entry, objId = t.dataset.obj, kind = t.dataset.kind;
+      confirmModal({
+        title:'Delete this '+(kind==='bill'?'payment':'receipt')+'?',
+        msg:'The linked posting will be removed and the balance due will go back up. This cannot be undone.',
+        label:'Delete', onYes:()=>deletePayment(entryId, objId, kind)
+      });
+    }); break;
     case 'new-bill': openBillModal(); break;
+    case 'edit-bill': requireAuth(()=>openBillModal(id)); break;
+    case 'view-vendor-ledger': openVendorLedgerModal(id); break;
     case 'new-account': openAccountModal(); break;
+    case 'add-tally-accounts': ensureTallyAccounts(); break;
     case 'new-group': openGroupModal(); break;
     case 'del-group': requireAuth(()=>{
       const g = (cur().groups||[]).find(x=>x.id===id); if(!g) return;
@@ -2355,10 +2626,11 @@ document.addEventListener('click', e=>{
     case 'pay-bill': openPaymentModal('bill', id); break;
     case 'del-bill': {
       const b = cur().bills.find(x=>x.id===id); if(!b) break;
+      const payCount = cur().journal.filter(e=>e.linked==='pay:'+b.id).length;
       requireAuth(()=>confirmModal({
-        title:'Void bill '+b.no+'?', msg:'The payable posting will be removed from the ledger. This cannot be undone.',
+        title:'Void bill '+b.no+'?', msg:'The payable posting will be removed from the ledger'+(payCount?', along with '+payCount+' payment'+(payCount>1?'s':'')+' recorded against it':'')+'. This cannot be undone.',
         label:'Void bill', onYes:()=>{
-          cur().journal = cur().journal.filter(x=>x.id!==b.entryId);
+          cur().journal = cur().journal.filter(x=>x.id!==b.entryId && x.linked!=='pay:'+b.id);
           cur().bills = cur().bills.filter(x=>x.id!==id);
           save(); render(); toast('Bill '+b.no+' voided');
         }
